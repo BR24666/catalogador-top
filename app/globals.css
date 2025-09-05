@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-600;
+  }
+  body {
+    @apply bg-gray-900 text-white;
+  }
+}
+
+@layer components {
+  .candle-green {
+    @apply bg-green-500 text-white;
+  }
+  
+  .candle-red {
+    @apply bg-red-500 text-white;
+  }
+  
+  .time-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(60, 1fr);
+    gap: 1px;
+  }
+  
+  .minute-cell {
+    @apply w-4 h-4 text-xs flex items-center justify-center border border-gray-600;
+  }
+}
