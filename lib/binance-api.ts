@@ -61,20 +61,31 @@ export class BinanceAPI {
       }
 
       const kline = klines[0]
+      
+      // Validar se o timestamp é válido
+      if (!kline.openTime || isNaN(kline.openTime)) {
+        console.error('Timestamp inválido recebido da Binance:', kline.openTime)
+        return null
+      }
+      
       const timestamp = new Date(kline.openTime)
       
-      // Converter para timezone de São Paulo (UTC-3)
-      const saoPauloTime = new Date(timestamp.getTime() - (3 * 60 * 60 * 1000))
+      // Verificar se a data é válida
+      if (isNaN(timestamp.getTime())) {
+        console.error('Data inválida criada a partir do timestamp:', kline.openTime)
+        return null
+      }
       
+      // Usar UTC diretamente (a Binance já retorna em UTC)
       const openPrice = parseFloat(kline.open)
       const closePrice = parseFloat(kline.close)
       const color = closePrice >= openPrice ? 'GREEN' : 'RED'
       
-      const hour = saoPauloTime.getHours()
-      const minute = saoPauloTime.getMinutes()
-      const day = saoPauloTime.getDate()
-      const month = saoPauloTime.getMonth() + 1
-      const year = saoPauloTime.getFullYear()
+      const hour = timestamp.getUTCHours()
+      const minute = timestamp.getUTCMinutes()
+      const day = timestamp.getUTCDate()
+      const month = timestamp.getUTCMonth() + 1
+      const year = timestamp.getUTCFullYear()
       
       const fullDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
       const timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
