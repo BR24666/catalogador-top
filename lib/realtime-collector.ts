@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export class RealtimeCollector {
   private intervals: Map<string, NodeJS.Timeout> = new Map()
   private isCollecting = false
-  private onDataUpdate?: (candles: CandleData[]) => void
+  public onDataUpdate?: (candles: CandleData[]) => void
 
   constructor(onDataUpdate?: (candles: CandleData[]) => void) {
     this.onDataUpdate = onDataUpdate
