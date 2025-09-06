@@ -1,17 +1,21 @@
-interface BinanceKline {
-  openTime: number
-  open: string
-  high: string
-  low: string
-  close: string
-  volume: string
-  closeTime: number
-  quoteAssetVolume: string
-  numberOfTrades: number
-  takerBuyBaseAssetVolume: string
-  takerBuyQuoteAssetVolume: string
-  ignore: string
-}
+// A API da Binance retorna um array com 12 elementos:
+// [0] openTime, [1] open, [2] high, [3] low, [4] close, [5] volume,
+// [6] closeTime, [7] quoteAssetVolume, [8] numberOfTrades, [9] takerBuyBaseAssetVolume,
+// [10] takerBuyQuoteAssetVolume, [11] ignore
+type BinanceKline = [
+  number, // openTime
+  string, // open
+  string, // high
+  string, // low
+  string, // close
+  string, // volume
+  number, // closeTime
+  string, // quoteAssetVolume
+  number, // numberOfTrades
+  string, // takerBuyBaseAssetVolume
+  string, // takerBuyQuoteAssetVolume
+  string  // ignore
+]
 
 export interface CandleData {
   id?: string
@@ -69,24 +73,29 @@ export class BinanceAPI {
       const kline = klines[0]
       console.log('📈 Kline processado:', kline)
       
+      // Acessar dados do array: [openTime, open, high, low, close, volume, ...]
+      const openTime = kline[0]
+      const open = kline[1]
+      const close = kline[4]
+      
       // Validar se o timestamp é válido
-      if (!kline.openTime || isNaN(kline.openTime)) {
-        console.error('Timestamp inválido recebido da Binance:', kline.openTime)
+      if (!openTime || isNaN(openTime)) {
+        console.error('Timestamp inválido recebido da Binance:', openTime)
         console.error('Estrutura completa do kline:', kline)
         return null
       }
       
-      const timestamp = new Date(kline.openTime)
+      const timestamp = new Date(openTime)
       
       // Verificar se a data é válida
       if (isNaN(timestamp.getTime())) {
-        console.error('Data inválida criada a partir do timestamp:', kline.openTime)
+        console.error('Data inválida criada a partir do timestamp:', openTime)
         return null
       }
       
       // Usar UTC diretamente (a Binance já retorna em UTC)
-      const openPrice = parseFloat(kline.open)
-      const closePrice = parseFloat(kline.close)
+      const openPrice = parseFloat(open)
+      const closePrice = parseFloat(close)
       const color = closePrice >= openPrice ? 'GREEN' : 'RED'
       
       const hour = timestamp.getUTCHours()
