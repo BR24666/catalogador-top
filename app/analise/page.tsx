@@ -1,10 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { CatalogService } from '@/lib/catalog-service'
 import { CandleData } from '@/lib/supabase'
-import { format, subDays } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { format } from 'date-fns'
 import { BarChart3, TrendingUp, TrendingDown, Activity, Calendar, Clock } from 'lucide-react'
 
 interface AnalysisData {
@@ -34,10 +33,9 @@ export default function AnalisePage() {
   const loadAnalysis = async () => {
     setLoading(true)
     try {
-      const candles = await catalogService.getCandlesByDateRange(
+      const candles = await catalogService.getCandlesByDate(
         selectedPair,
         selectedTimeframe,
-        selectedDate,
         selectedDate
       )
 
@@ -157,7 +155,7 @@ export default function AnalisePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-center mb-2">
-            📈 Análise de Dados
+             Análise de Dados
           </h1>
           <p className="text-gray-400 text-center">
             Análise detalhada das velas catalogadas
@@ -174,9 +172,9 @@ export default function AnalisePage() {
                 onChange={(e) => setSelectedPair(e.target.value as any)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="BTCUSDT">₿ BTC/USDT</option>
-                <option value="XRPUSDT">💎 XRP/USDT</option>
-                <option value="SOLUSDT">☀️ SOL/USDT</option>
+                <option value="BTCUSDT"> BTC/USDT</option>
+                <option value="XRPUSDT"> XRP/USDT</option>
+                <option value="SOLUSDT"> SOL/USDT</option>
               </select>
             </div>
             
