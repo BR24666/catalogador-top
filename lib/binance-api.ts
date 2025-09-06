@@ -13,7 +13,7 @@ interface BinanceKline {
   ignore: string
 }
 
-interface CandleData {
+export interface CandleData {
   pair: string
   timeframe: string
   timestamp: string
