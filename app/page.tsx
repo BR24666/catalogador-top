@@ -111,12 +111,32 @@ export default function Home() {
 
   const createGrid = () => {
     console.log(`🎯 Criando grid com ${candles.length} candles`)
-    const grid = Array(24).fill(null).map(() => Array(60).fill(null))
+    const minuteColumns = getMinuteColumns(selectedTimeframe)
+    const grid = Array(24).fill(null).map(() => Array(minuteColumns).fill(null))
     
     candles.forEach(candle => {
-      if (candle.hour >= 0 && candle.hour < 24 && candle.minute >= 0 && candle.minute < 60) {
-        grid[candle.hour][candle.minute] = candle
-        console.log(`📍 Posicionando vela: ${candle.hour}:${candle.minute} - ${candle.color}`)
+      if (candle.hour >= 0 && candle.hour < 24) {
+        let columnIndex = 0
+        
+        // Mapear minuto para coluna baseado no timeframe
+        switch (selectedTimeframe) {
+          case '1m':
+            columnIndex = candle.minute // 0-59 minutos
+            break
+          case '5m':
+            columnIndex = Math.floor(candle.minute / 5) // 0-11 colunas
+            break
+          case '15m':
+            columnIndex = Math.floor(candle.minute / 15) // 0-3 colunas
+            break
+          default:
+            columnIndex = candle.minute
+        }
+        
+        if (columnIndex >= 0 && columnIndex < minuteColumns) {
+          grid[candle.hour][columnIndex] = candle
+          console.log(`📍 Posicionando vela: ${candle.hour}:${candle.minute} -> coluna ${columnIndex} - ${candle.color}`)
+        }
       }
     })
     
@@ -126,10 +146,10 @@ export default function Home() {
   // Função para obter o intervalo de minutos baseado no timeframe
   const getMinuteInterval = (timeframe: string): number => {
     switch (timeframe) {
-      case '1m': return 1
+      case '1m': return 10 // Mostrar a cada 10 minutos para melhor legibilidade
       case '5m': return 5
       case '15m': return 15
-      default: return 1
+      default: return 10
     }
   }
 
@@ -137,6 +157,16 @@ export default function Home() {
   const shouldShowMinute = (minute: number, timeframe: string): boolean => {
     const interval = getMinuteInterval(timeframe)
     return minute % interval === 0
+  }
+
+  // Função para obter o número de colunas baseado no timeframe
+  const getMinuteColumns = (timeframe: string): number => {
+    switch (timeframe) {
+      case '1m': return 60 // 0 a 59 minutos
+      case '5m': return 12 // 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+      case '15m': return 4  // 0, 15, 30, 45
+      default: return 60
+    }
   }
 
   const grid = createGrid()
