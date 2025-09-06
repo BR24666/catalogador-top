@@ -11,6 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<'realtime' | 'historical'>('realtime')
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState('2025-09-05')
@@ -54,26 +55,32 @@ export default function Home() {
     }
   }
 
-  // Inicializar o coletor e iniciar coleta automática
+  // Inicializar o coletor e iniciar coleta automática apenas na aba tempo real
   useEffect(() => {
     collectorRef.current = realtimeCollector
     
     // Configurar callback para atualizações
     realtimeCollector.onDataUpdate = (newCandles) => {
-      console.log(`🔄 Atualizando grid com ${newCandles.length} candles`)
-      setCandles(newCandles)
-      setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
-      updateStats(newCandles)
+      if (activeTab === 'realtime') {
+        console.log(`🔄 Atualizando grid com ${newCandles.length} candles`)
+        setCandles(newCandles)
+        setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
+        updateStats(newCandles)
+      }
     }
     
-    // Iniciar coleta automática
-    realtimeCollector.startCollection('SOLUSDT', selectedTimeframe)
-    console.log('🚀 Coleta automática iniciada!')
+    // Iniciar coleta automática apenas na aba tempo real
+    if (activeTab === 'realtime') {
+      realtimeCollector.startCollection('SOLUSDT', selectedTimeframe)
+      console.log('🚀 Coleta automática iniciada!')
+    } else {
+      realtimeCollector.stopAllCollections()
+    }
     
     return () => {
       realtimeCollector.stopAllCollections()
     }
-  }, [])
+  }, [activeTab])
 
   useEffect(() => {
     loadCandles()
@@ -140,40 +147,104 @@ export default function Home() {
         React.createElement('h1', { style: { fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '16px' } }, 'Catálogo de Velas SOLUSDT'),
         React.createElement('p', { style: { color: '#9ca3af', marginBottom: '24px' } }, 'Visualização das cores das velas - Hora na linha horizontal, Minuto na coluna vertical'),
         
-        React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
-          React.createElement('div', null,
-            React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Data:'),
-            React.createElement('input', {
-              type: 'date',
-              value: selectedDate,
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value),
-              min: '2025-08-06',
-              max: '2025-09-05',
-              style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-            })
+        // Abas
+        React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '24px' } },
+          React.createElement('button', {
+            onClick: () => setActiveTab('realtime'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'realtime' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '📈'),
+            React.createElement('span', null, 'Tempo Real')
           ),
-          
+          React.createElement('button', {
+            onClick: () => setActiveTab('historical'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'historical' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '📊'),
+            React.createElement('span', null, 'Análise Histórica')
+          )
+        ),
+        
+        // Conteúdo baseado na aba ativa
+        activeTab === 'realtime' ? 
+          // Aba Tempo Real
           React.createElement('div', null,
-            React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
-            React.createElement('select', {
-              value: selectedTimeframe,
-              onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
-              style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-            },
-              React.createElement('option', { value: '1m' }, '1 minuto'),
-              React.createElement('option', { value: '5m' }, '5 minutos'),
-              React.createElement('option', { value: '15m' }, '15 minutos')
+            React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
+              React.createElement('div', null,
+                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
+                React.createElement('select', {
+                  value: selectedTimeframe,
+                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
+                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
+                },
+                  React.createElement('option', { value: '1m' }, '1 minuto'),
+                  React.createElement('option', { value: '5m' }, '5 minutos'),
+                  React.createElement('option', { value: '15m' }, '15 minutos')
+                )
+              ),
+              
+              React.createElement('div', { style: { display: 'flex', alignItems: 'center', marginTop: '16px' } },
+                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af' } },
+                  React.createElement('span', { style: { color: '#10b981' } }, `🟢 Coleta Automática Ativa - Última atualização: ${lastUpdate || 'Carregando...'}`)
+                )
+              )
             )
-          ),
-          
-          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025'),
-          
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', marginTop: '16px' } },
-            React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af' } },
-              React.createElement('span', { style: { color: '#10b981' } }, `🟢 Coleta Automática Ativa - Última atualização: ${lastUpdate || 'Carregando...'}`)
+          ) :
+          // Aba Análise Histórica
+          React.createElement('div', null,
+            React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
+              React.createElement('div', null,
+                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Data:'),
+                React.createElement('input', {
+                  type: 'date',
+                  value: selectedDate,
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value),
+                  min: '2025-08-06',
+                  max: '2025-09-05',
+                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
+                })
+              ),
+              
+              React.createElement('div', null,
+                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
+                React.createElement('select', {
+                  value: selectedTimeframe,
+                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
+                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
+                },
+                  React.createElement('option', { value: '1m' }, '1 minuto'),
+                  React.createElement('option', { value: '5m' }, '5 minutos'),
+                  React.createElement('option', { value: '15m' }, '15 minutos')
+                )
+              ),
+              
+              React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025')
             )
           )
-        )
       ),
 
       React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' } },
