@@ -24,7 +24,7 @@ interface CandleData {
 export default function Home() {
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
-  const [selectedDate, setSelectedDate] = useState('2025-09-05') // Data mais recente
+  const [selectedDate, setSelectedDate] = useState('2025-09-05')
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m')
   const [stats, setStats] = useState({
     total: 0,
@@ -34,11 +34,10 @@ export default function Home() {
     redPercent: 0
   })
 
-  // Carregar dados do Supabase
   const loadCandles = async () => {
     try {
       setLoading(true)
-      console.log(`📊 Carregando dados para ${selectedDate} - ${selectedTimeframe}...`)
+      console.log(`Carregando dados para ${selectedDate} - ${selectedTimeframe}...`)
       
       const { data, error } = await supabase
         .from('candle_data')
@@ -53,10 +52,9 @@ export default function Home() {
         return
       }
       
-      console.log(`✅ Encontrados ${data?.length || 0} candles para ${selectedDate}`)
+      console.log(`Encontrados ${data?.length || 0} candles para ${selectedDate}`)
       setCandles(data || [])
       
-      // Calcular estatísticas
       const total = data?.length || 0
       const green = data?.filter(c => c.color === 'GREEN').length || 0
       const red = data?.filter(c => c.color === 'RED').length || 0
@@ -76,12 +74,10 @@ export default function Home() {
     }
   }
 
-  // Carregar dados quando a data ou timeframe muda
   useEffect(() => {
     loadCandles()
   }, [selectedDate, selectedTimeframe])
 
-  // Criar grid 24x60 (horas x minutos)
   const createGrid = () => {
     const grid = Array(24).fill(null).map(() => Array(60).fill(null))
     
@@ -99,14 +95,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">📊 Catálogo de Velas SOLUSDT</h1>
+          <h1 className="text-4xl font-bold mb-4">Catálogo de Velas SOLUSDT</h1>
           <p className="text-gray-300 mb-6">
             Visualização das cores das velas - Hora na linha horizontal, Minuto na coluna vertical
           </p>
           
-          {/* Filtros */}
           <div className="flex gap-4 items-center mb-6">
             <div>
               <label className="block text-sm font-medium mb-2">Data:</label>
@@ -139,7 +133,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-800 p-4 rounded-lg">
             <div className="text-2xl font-bold text-blue-400">{stats.total}</div>
@@ -164,7 +157,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Grid de Velas */}
         <div className="bg-gray-800 p-6 rounded-lg">
           <h2 className="text-xl font-bold mb-4">
             Grid 24x60 - {selectedDate} ({selectedTimeframe})
@@ -178,7 +170,6 @@ export default function Home() {
           ) : (
             <div className="overflow-x-auto">
               <div className="inline-block">
-                {/* Header com minutos */}
                 <div className="flex mb-2">
                   <div className="w-16 text-xs text-gray-400 text-center font-bold">Hora</div>
                   {Array.from({ length: 60 }, (_, i) => (
@@ -188,7 +179,6 @@ export default function Home() {
                   ))}
                 </div>
                 
-                {/* Grid */}
                 {grid.map((hour, hourIndex) => (
                   <div key={hourIndex} className="flex items-center mb-1">
                     <div className="w-16 text-xs text-gray-400 text-right pr-2 font-bold">
@@ -214,7 +204,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Legenda */}
         <div className="mt-6 flex gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-500 rounded"></div>
@@ -230,9 +219,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Informações dos Dados */}
         <div className="mt-8 bg-gray-800 p-6 rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">📊 Informações dos Dados</h3>
+          <h3 className="text-lg font-semibold mb-4">Informações dos Dados</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-gray-400">Par:</span>
