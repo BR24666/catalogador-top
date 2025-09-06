@@ -1,0 +1,5 @@
+[33m047adc0c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m Fix: Versao ultra simples sem estilos complexos para resolver erro JSX
+[33m91b63ad2[m Fix: Usando inline styles em vez de className para resolver erro JSX
+[33m707e548e[m Fix: Simplificando JSX para resolver erro de compilacao
+[33m495ec507[m  Fix: Corrigindo erro de sintaxe JSX no page.tsx
+[33m6a1d7d9f[m  Sistema limpo: Apenas visualização de velas SOLUSDT - Grid 24x60
