@@ -89,201 +89,137 @@ export default function Home() {
   const grid = createGrid()
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#111827', color: 'white', padding: '24px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '16px' }}>
-            Catálogo de Velas SOLUSDT
-          </h1>
-          <p style={{ color: '#D1D5DB', marginBottom: '24px' }}>
-            Visualização das cores das velas - Hora na linha horizontal, Minuto na coluna vertical
-          </p>
-          
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' }}>
-                Data:
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min="2025-08-06"
-                max="2025-09-05"
-                style={{
-                  backgroundColor: '#1F2937',
-                  border: '1px solid #4B5563',
-                  borderRadius: '4px',
-                  padding: '8px 12px',
-                  color: 'white'
-                }}
-              />
-            </div>
-            
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' }}>
-                Timeframe:
-              </label>
-              <select
-                value={selectedTimeframe}
-                onChange={(e) => setSelectedTimeframe(e.target.value)}
-                style={{
-                  backgroundColor: '#1F2937',
-                  border: '1px solid #4B5563',
-                  borderRadius: '4px',
-                  padding: '8px 12px',
-                  color: 'white'
-                }}
-              >
-                <option value="1m">1 minuto</option>
-                <option value="5m">5 minutos</option>
-                <option value="15m">15 minutos</option>
-              </select>
-            </div>
-            
-            <div style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>
-              Período disponível: 06/08/2025 a 05/09/2025
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-          <div style={{ backgroundColor: '#1F2937', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60A5FA' }}>{stats.total}</div>
-            <div style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>Total de Velas</div>
-          </div>
-          
-          <div style={{ backgroundColor: '#1F2937', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34D399' }}>{stats.green}</div>
-            <div style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>Verdes ({stats.greenPercent}%)</div>
-          </div>
-          
-          <div style={{ backgroundColor: '#1F2937', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#F87171' }}>{stats.red}</div>
-            <div style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>Vermelhas ({stats.redPercent}%)</div>
-          </div>
-          
-          <div style={{ backgroundColor: '#1F2937', padding: '16px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#FBBF24' }}>
-              {stats.greenPercent > stats.redPercent ? 'Verde' : 'Vermelho'}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>Tendência</div>
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: '#1F2937', padding: '24px', borderRadius: '8px' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '16px' }}>
-            Grid 24x60 - {selectedDate} ({selectedTimeframe})
-          </h2>
-          
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                border: '2px solid #60A5FA',
-                borderTop: '2px solid transparent',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto'
-              }}></div>
-              <p style={{ marginTop: '16px', color: '#9CA3AF' }}>Carregando dados...</p>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <div style={{ display: 'inline-block' }}>
-                <div style={{ display: 'flex', marginBottom: '8px' }}>
-                  <div style={{ width: '64px', fontSize: '0.75rem', color: '#9CA3AF', textAlign: 'center', fontWeight: 'bold' }}>
-                    Hora
-                  </div>
-                  {Array.from({ length: 60 }, (_, i) => (
-                    <div key={i} style={{ width: '8px', height: '24px', fontSize: '0.75rem', color: '#9CA3AF', textAlign: 'center' }}>
-                      {i % 5 === 0 ? i : ''}
-                    </div>
-                  ))}
-                </div>
-                
-                {grid.map((hour, hourIndex) => (
-                  <div key={hourIndex} style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                    <div style={{ width: '64px', fontSize: '0.75rem', color: '#9CA3AF', textAlign: 'right', paddingRight: '8px', fontWeight: 'bold' }}>
-                      {hourIndex.toString().padStart(2, '0')}:00
-                    </div>
-                    {hour.map((candle, minuteIndex) => (
-                      <div
-                        key={`${hourIndex}-${minuteIndex}`}
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          margin: '0 2px',
-                          borderRadius: '2px',
-                          backgroundColor: candle 
-                            ? candle.color === 'GREEN' 
-                              ? '#10B981' 
-                              : '#EF4444'
-                            : '#374151'
-                        }}
-                        title={candle ? `${candle.time_key} - ${candle.color} - $${candle.close_price}` : ''}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div style={{ marginTop: '24px', display: 'flex', gap: '24px', fontSize: '0.875rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '16px', height: '16px', backgroundColor: '#10B981', borderRadius: '4px' }}></div>
-            <span>Vela Verde (Fechamento ≥ Abertura)</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '16px', height: '16px', backgroundColor: '#EF4444', borderRadius: '4px' }}></div>
-            <span>Vela Vermelha (Fechamento < Abertura)</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '16px', height: '16px', backgroundColor: '#374151', borderRadius: '4px' }}></div>
-            <span>Sem dados</span>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '32px', backgroundColor: '#1F2937', padding: '24px', borderRadius: '8px' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '16px' }}>Informações dos Dados</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', fontSize: '0.875rem' }}>
-            <div>
-              <span style={{ color: '#9CA3AF' }}>Par:</span>
-              <span style={{ marginLeft: '8px', color: 'white', fontWeight: 'bold' }}>SOLUSDT</span>
-            </div>
-            <div>
-              <span style={{ color: '#9CA3AF' }}>Período:</span>
-              <span style={{ marginLeft: '8px', color: 'white' }}>06/08/2025 a 05/09/2025</span>
-            </div>
-            <div>
-              <span style={{ color: '#9CA3AF' }}>Total de candles:</span>
-              <span style={{ marginLeft: '8px', color: 'white', fontWeight: 'bold' }}>54,720</span>
-            </div>
-            <div>
-              <span style={{ color: '#9CA3AF' }}>1m:</span>
-              <span style={{ marginLeft: '8px', color: 'white' }}>43,200 candles</span>
-            </div>
-            <div>
-              <span style={{ color: '#9CA3AF' }}>5m:</span>
-              <span style={{ marginLeft: '8px', color: 'white' }}>8,640 candles</span>
-            </div>
-            <div>
-              <span style={{ color: '#9CA3AF' }}>15m:</span>
-              <span style={{ marginLeft: '8px', color: 'white' }}>2,880 candles</span>
-            </div>
-          </div>
-        </div>
+    <div>
+      <h1>Catálogo de Velas SOLUSDT</h1>
+      <p>Visualização das cores das velas - Hora na linha horizontal, Minuto na coluna vertical</p>
+      
+      <div>
+        <label>Data:</label>
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          min="2025-08-06"
+          max="2025-09-05"
+        />
       </div>
       
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      <div>
+        <label>Timeframe:</label>
+        <select
+          value={selectedTimeframe}
+          onChange={(e) => setSelectedTimeframe(e.target.value)}
+        >
+          <option value="1m">1 minuto</option>
+          <option value="5m">5 minutos</option>
+          <option value="15m">15 minutos</option>
+        </select>
+      </div>
+      
+      <div>
+        <p>Período disponível: 06/08/2025 a 05/09/2025</p>
+      </div>
+
+      <div>
+        <div>
+          <div>Total de Velas: {stats.total}</div>
+        </div>
+        
+        <div>
+          <div>Verdes: {stats.green} ({stats.greenPercent}%)</div>
+        </div>
+        
+        <div>
+          <div>Vermelhas: {stats.red} ({stats.redPercent}%)</div>
+        </div>
+        
+        <div>
+          <div>Tendência: {stats.greenPercent > stats.redPercent ? 'Verde' : 'Vermelho'}</div>
+        </div>
+      </div>
+
+      <div>
+        <h2>Grid 24x60 - {selectedDate} ({selectedTimeframe})</h2>
+        
+        {loading ? (
+          <div>
+            <div>Carregando dados...</div>
+          </div>
+        ) : (
+          <div>
+            <div>
+              <div>Hora</div>
+              {Array.from({ length: 60 }, (_, i) => (
+                <div key={i}>
+                  {i % 5 === 0 ? i : ''}
+                </div>
+              ))}
+            </div>
+            
+            {grid.map((hour, hourIndex) => (
+              <div key={hourIndex}>
+                <div>
+                  {hourIndex.toString().padStart(2, '0')}:00
+                </div>
+                {hour.map((candle, minuteIndex) => (
+                  <div
+                    key={`${hourIndex}-${minuteIndex}`}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      margin: '0 2px',
+                      borderRadius: '2px',
+                      backgroundColor: candle 
+                        ? candle.color === 'GREEN' 
+                          ? '#10B981' 
+                          : '#EF4444'
+                        : '#374151'
+                    }}
+                    title={candle ? `${candle.time_key} - ${candle.color} - $${candle.close_price}` : ''}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div>
+          <div style={{ width: '16px', height: '16px', backgroundColor: '#10B981', borderRadius: '4px' }}></div>
+          <span>Vela Verde (Fechamento ≥ Abertura)</span>
+        </div>
+        <div>
+          <div style={{ width: '16px', height: '16px', backgroundColor: '#EF4444', borderRadius: '4px' }}></div>
+          <span>Vela Vermelha (Fechamento < Abertura)</span>
+        </div>
+        <div>
+          <div style={{ width: '16px', height: '16px', backgroundColor: '#374151', borderRadius: '4px' }}></div>
+          <span>Sem dados</span>
+        </div>
+      </div>
+
+      <div>
+        <h3>Informações dos Dados</h3>
+        <div>
+          <div>Par: SOLUSDT</div>
+        </div>
+        <div>
+          <div>Período: 06/08/2025 a 05/09/2025</div>
+        </div>
+        <div>
+          <div>Total de candles: 54,720</div>
+        </div>
+        <div>
+          <div>1m: 43,200 candles</div>
+        </div>
+        <div>
+          <div>5m: 8,640 candles</div>
+        </div>
+        <div>
+          <div>15m: 2,880 candles</div>
+        </div>
+      </div>
     </div>
   )
 }
