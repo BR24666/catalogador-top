@@ -88,13 +88,19 @@ export default function Home() {
   useEffect(() => {
     loadCandles()
     
-    // Reiniciar coleta com o novo timeframe
-    if (collectorRef.current) {
+    // Reiniciar coleta apenas na aba tempo real
+    if (activeTab === 'realtime' && collectorRef.current) {
       collectorRef.current.stopCollection('SOLUSDT', selectedTimeframe)
       collectorRef.current.startCollection('SOLUSDT', selectedTimeframe)
       console.log(`🔄 Coleta reiniciada para timeframe: ${selectedTimeframe}`)
+    } else if (activeTab === 'historical') {
+      // Parar coleta na aba histórica
+      if (collectorRef.current) {
+        collectorRef.current.stopAllCollections()
+        console.log('🛑 Coleta parada na aba histórica')
+      }
     }
-  }, [selectedDate, selectedTimeframe])
+  }, [selectedDate, selectedTimeframe, activeTab])
 
 
   // Função para atualizar estatísticas
@@ -347,9 +353,9 @@ export default function Home() {
                     justifyContent: 'center'
                   } 
                 }, 
-                  // Mostrar apenas alguns minutos para legibilidade
-                  selectedTimeframe === '1m' ? (i % 10 === 0 ? i.toString().padStart(2, '0') : '') :
-                  selectedTimeframe === '5m' ? (i % 2 === 0 ? (i * 5).toString().padStart(2, '0') : '') :
+                  // Mostrar minutos baseado no timeframe
+                  selectedTimeframe === '1m' ? i.toString().padStart(2, '0') :
+                  selectedTimeframe === '5m' ? (i * 5).toString().padStart(2, '0') :
                   selectedTimeframe === '15m' ? (i * 15).toString().padStart(2, '0') : ''
                 )
               )
@@ -373,7 +379,7 @@ export default function Home() {
                     },
                     title: candle 
                       ? `${candle.time_key} - ${candle.color} - $${candle.close_price}`
-                      : `${hourIndex.toString().padStart(2, '0')}:${getMinuteFromColumn(minuteIndex, selectedTimeframe).toString().padStart(2, '0')} - Sem dados`
+                      : `${hourIndex.toString().padStart(2, '0')}:${minuteIndex.toString().padStart(2, '0')} - Sem dados`
                   })
                 )
               )
