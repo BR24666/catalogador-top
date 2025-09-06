@@ -1,0 +1,5 @@
+[33m01b97008[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m  Configuração de coleta automática a cada 1 minuto + Interface de catálogo visual
+[33md7fddfc4[m feat: Adicionar API para coleta de dados históricos dos últimos 30 dias
+[33mcc58074c[m fix: Recriar arquivo catalog/route.ts para corrigir cache do Vercel
+[33md0b6d350[m fix: Corrigir erro de compilação - método getCandlesByDateRange para getCandlesByDate
+[33mca0bd881[m feat: Versão limpa e funcional do catalogador de velas
