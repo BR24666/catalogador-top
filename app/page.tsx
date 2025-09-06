@@ -219,7 +219,11 @@ export default function Home() {
                       textAlign: 'center',
                       margin: selectedTimeframe === '1m' ? '0 2px' : '0 1px'
                     } 
-                  }, i % 5 === 0 ? i : '') : null
+                  }, 
+                    selectedTimeframe === '1m' ? (i % 10 === 0 ? i : '') : 
+                    selectedTimeframe === '5m' ? (i % 5 === 0 ? i : '') :
+                    selectedTimeframe === '15m' ? (i % 15 === 0 ? i : '') : ''
+                  ) : null
               ).filter(Boolean)
             ),
             ...grid.map((hour, hourIndex) =>
