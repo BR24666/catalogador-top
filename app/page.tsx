@@ -102,7 +102,7 @@ export default function Home() {
             React.createElement('input', {
               type: 'date',
               value: selectedDate,
-              onChange: (e) => setSelectedDate(e.target.value),
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value),
               min: '2025-08-06',
               max: '2025-09-05',
               style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
@@ -113,7 +113,7 @@ export default function Home() {
             React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
             React.createElement('select', {
               value: selectedTimeframe,
-              onChange: (e) => setSelectedTimeframe(e.target.value),
+              onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
               style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
             },
               React.createElement('option', { value: '1m' }, '1 minuto'),
