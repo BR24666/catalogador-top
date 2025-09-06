@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { realtimeCollector } from '../lib/realtime-collector'
 
 const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
@@ -26,6 +27,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState('2025-09-05')
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m')
+  const [isRealtimeActive, setIsRealtimeActive] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<string>('')
   const [stats, setStats] = useState({
     total: 0,
     green: 0,
@@ -33,6 +36,7 @@ export default function Home() {
     greenPercent: 0,
     redPercent: 0
   })
+  const collectorRef = useRef<typeof realtimeCollector | null>(null)
 
   const loadCandles = async () => {
     try {
@@ -52,18 +56,7 @@ export default function Home() {
       }
       
       setCandles(data || [])
-      
-      const total = data?.length || 0
-      const green = data?.filter(c => c.color === 'GREEN').length || 0
-      const red = data?.filter(c => c.color === 'RED').length || 0
-      
-      setStats({
-        total,
-        green,
-        red,
-        greenPercent: total > 0 ? Math.round((green / total) * 100) : 0,
-        redPercent: total > 0 ? Math.round((red / total) * 100) : 0
-      })
+      updateStats(data || [])
       
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
@@ -72,9 +65,64 @@ export default function Home() {
     }
   }
 
+  // Inicializar o coletor
+  useEffect(() => {
+    collectorRef.current = realtimeCollector
+    
+    // Configurar callback para atualizações
+    realtimeCollector.onDataUpdate = (newCandles) => {
+      setCandles(newCandles)
+      setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
+      updateStats(newCandles)
+    }
+    
+    return () => {
+      realtimeCollector.stopAllCollections()
+    }
+  }, [])
+
   useEffect(() => {
     loadCandles()
+    
+    // Se a coleta em tempo real estiver ativa, reiniciar com o novo timeframe
+    if (isRealtimeActive && collectorRef.current) {
+      collectorRef.current.stopCollection('SOLUSDT', selectedTimeframe)
+      collectorRef.current.startCollection('SOLUSDT', selectedTimeframe)
+    }
   }, [selectedDate, selectedTimeframe])
+
+  // Função para iniciar coleta em tempo real
+  const startRealtimeCollection = () => {
+    if (collectorRef.current) {
+      collectorRef.current.startCollection('SOLUSDT', selectedTimeframe)
+      setIsRealtimeActive(true)
+      console.log('🚀 Coleta em tempo real iniciada!')
+    }
+  }
+
+  // Função para parar coleta em tempo real
+  const stopRealtimeCollection = () => {
+    if (collectorRef.current) {
+      collectorRef.current.stopCollection('SOLUSDT', selectedTimeframe)
+      setIsRealtimeActive(false)
+      console.log('⏹️ Coleta em tempo real parada!')
+    }
+  }
+
+  // Função para atualizar estatísticas
+  const updateStats = (candlesData: CandleData[]) => {
+    const total = candlesData.length
+    const green = candlesData.filter(c => c.color === 'GREEN').length
+    const red = candlesData.filter(c => c.color === 'RED').length
+    
+    setStats({
+      total,
+      green,
+      red,
+      greenPercent: total > 0 ? Math.round((green / total) * 100) : 0,
+      redPercent: total > 0 ? Math.round((red / total) * 100) : 0
+    })
+  }
 
   const createGrid = () => {
     const grid = Array(24).fill(null).map(() => Array(60).fill(null))
@@ -86,6 +134,22 @@ export default function Home() {
     })
     
     return grid
+  }
+
+  // Função para obter o intervalo de minutos baseado no timeframe
+  const getMinuteInterval = (timeframe: string): number => {
+    switch (timeframe) {
+      case '1m': return 1
+      case '5m': return 5
+      case '15m': return 15
+      default: return 1
+    }
+  }
+
+  // Função para verificar se um minuto deve ser exibido no grid
+  const shouldShowMinute = (minute: number, timeframe: string): boolean => {
+    const interval = getMinuteInterval(timeframe)
+    return minute % interval === 0
   }
 
   const grid = createGrid()
@@ -122,7 +186,55 @@ export default function Home() {
             )
           ),
           
-          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025')
+          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025'),
+          
+          React.createElement('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' } },
+            isRealtimeActive ? 
+              React.createElement('button', {
+                onClick: stopRealtimeCollection,
+                style: {
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }
+              },
+                React.createElement('span', null, '⏹️'),
+                React.createElement('span', null, 'Parar Coleta')
+              ) :
+              React.createElement('button', {
+                onClick: startRealtimeCollection,
+                style: {
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }
+              },
+                React.createElement('span', null, '🚀'),
+                React.createElement('span', null, 'Iniciar Coleta')
+              ),
+            
+            React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af' } },
+              isRealtimeActive ? 
+                React.createElement('span', { style: { color: '#10b981' } }, `🟢 Ativo - Última atualização: ${lastUpdate || 'Nunca'}`) :
+                React.createElement('span', { style: { color: '#6b7280' } }, '⚪ Inativo')
+            )
+          )
         )
       ),
 
@@ -149,7 +261,9 @@ export default function Home() {
       ),
 
       React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '24px', borderRadius: '8px' } },
-        React.createElement('h2', { style: { fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '16px' } }, `Grid 24x60 - ${selectedDate} (${selectedTimeframe})`),
+        React.createElement('h2', { style: { fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '16px' } }, 
+          `Grid 24x${selectedTimeframe === '1m' ? '60' : selectedTimeframe === '5m' ? '12' : '4'} - ${selectedDate} (${selectedTimeframe})`
+        ),
         
         loading ? 
           React.createElement('div', { style: { textAlign: 'center', padding: '32px 0' } },
@@ -160,30 +274,42 @@ export default function Home() {
           React.createElement('div', { style: { display: 'inline-block' } },
             React.createElement('div', { style: { display: 'flex', marginBottom: '8px' } },
               React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center', fontWeight: 'bold' } }, 'Hora'),
-              ...Array.from({ length: 60 }, (_, i) =>
-                React.createElement('div', { key: i, style: { width: '8px', height: '24px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' } }, i % 5 === 0 ? i : '')
-              )
+              ...Array.from({ length: 60 }, (_, i) => 
+                shouldShowMinute(i, selectedTimeframe) ? 
+                  React.createElement('div', { 
+                    key: i, 
+                    style: { 
+                      width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px', 
+                      height: '24px', 
+                      fontSize: '0.75rem', 
+                      color: '#9ca3af', 
+                      textAlign: 'center',
+                      margin: selectedTimeframe === '1m' ? '0 2px' : '0 1px'
+                    } 
+                  }, i % 5 === 0 ? i : '') : null
+              ).filter(Boolean)
             ),
             ...grid.map((hour, hourIndex) =>
               React.createElement('div', { key: hourIndex, style: { display: 'flex', alignItems: 'center', marginBottom: '4px' } },
                 React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'right', paddingRight: '8px', fontWeight: 'bold' } }, `${hourIndex.toString().padStart(2, '0')}:00`),
-                ...hour.map((candle, minuteIndex) =>
-                  React.createElement('div', {
-                    key: `${hourIndex}-${minuteIndex}`,
-                    style: {
-                      width: '8px',
-                      height: '8px',
-                      margin: '0 2px',
-                      borderRadius: '2px',
-                      backgroundColor: candle 
-                        ? candle.color === 'GREEN' 
-                          ? '#22c55e' 
-                          : '#ef4444'
-                        : '#4b5563'
-                    },
-                    title: candle ? `${candle.time_key} - ${candle.color} - $${candle.close_price}` : ''
-                  })
-                )
+                ...hour.map((candle, minuteIndex) => 
+                  shouldShowMinute(minuteIndex, selectedTimeframe) ?
+                    React.createElement('div', {
+                      key: `${hourIndex}-${minuteIndex}`,
+                      style: {
+                        width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px',
+                        height: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '10px' : '12px',
+                        margin: selectedTimeframe === '1m' ? '0 2px' : '0 1px',
+                        borderRadius: '2px',
+                        backgroundColor: candle 
+                          ? candle.color === 'GREEN' 
+                            ? '#22c55e' 
+                            : '#ef4444'
+                          : '#4b5563'
+                      },
+                      title: candle ? `${candle.time_key} - ${candle.color} - $${candle.close_price}` : ''
+                    }) : null
+                ).filter(Boolean)
               )
             )
           )
