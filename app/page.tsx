@@ -37,7 +37,6 @@ export default function Home() {
   const loadCandles = async () => {
     try {
       setLoading(true)
-      console.log(`Carregando dados para ${selectedDate} - ${selectedTimeframe}...`)
       
       const { data, error } = await supabase
         .from('candle_data')
@@ -52,7 +51,6 @@ export default function Home() {
         return
       }
       
-      console.log(`Encontrados ${data?.length || 0} candles para ${selectedDate}`)
       setCandles(data || [])
       
       const total = data?.length || 0
@@ -151,7 +149,7 @@ export default function Home() {
           
           <div className="bg-gray-800 p-4 rounded-lg">
             <div className="text-2xl font-bold text-yellow-400">
-              {stats.greenPercent > stats.redPercent ? '🟢' : '🔴'}
+              {stats.greenPercent > stats.redPercent ? 'Verde' : 'Vermelho'}
             </div>
             <div className="text-sm text-gray-400">Tendência</div>
           </div>
