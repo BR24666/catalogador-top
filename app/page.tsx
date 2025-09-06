@@ -27,7 +27,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState('2025-09-05')
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m')
-  const [isRealtimeActive, setIsRealtimeActive] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<string>('')
   const [stats, setStats] = useState({
     total: 0,
@@ -65,7 +64,7 @@ export default function Home() {
     }
   }
 
-  // Inicializar o coletor
+  // Inicializar o coletor e iniciar coleta automática
   useEffect(() => {
     collectorRef.current = realtimeCollector
     
@@ -76,6 +75,10 @@ export default function Home() {
       updateStats(newCandles)
     }
     
+    // Iniciar coleta automática
+    realtimeCollector.startCollection('SOLUSDT', selectedTimeframe)
+    console.log('🚀 Coleta automática iniciada!')
+    
     return () => {
       realtimeCollector.stopAllCollections()
     }
@@ -84,30 +87,14 @@ export default function Home() {
   useEffect(() => {
     loadCandles()
     
-    // Se a coleta em tempo real estiver ativa, reiniciar com o novo timeframe
-    if (isRealtimeActive && collectorRef.current) {
+    // Reiniciar coleta com o novo timeframe
+    if (collectorRef.current) {
       collectorRef.current.stopCollection('SOLUSDT', selectedTimeframe)
       collectorRef.current.startCollection('SOLUSDT', selectedTimeframe)
+      console.log(`🔄 Coleta reiniciada para timeframe: ${selectedTimeframe}`)
     }
   }, [selectedDate, selectedTimeframe])
 
-  // Função para iniciar coleta em tempo real
-  const startRealtimeCollection = () => {
-    if (collectorRef.current) {
-      collectorRef.current.startCollection('SOLUSDT', selectedTimeframe)
-      setIsRealtimeActive(true)
-      console.log('🚀 Coleta em tempo real iniciada!')
-    }
-  }
-
-  // Função para parar coleta em tempo real
-  const stopRealtimeCollection = () => {
-    if (collectorRef.current) {
-      collectorRef.current.stopCollection('SOLUSDT', selectedTimeframe)
-      setIsRealtimeActive(false)
-      console.log('⏹️ Coleta em tempo real parada!')
-    }
-  }
 
   // Função para atualizar estatísticas
   const updateStats = (candlesData: CandleData[]) => {
@@ -188,51 +175,9 @@ export default function Home() {
           
           React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025'),
           
-          React.createElement('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px' } },
-            isRealtimeActive ? 
-              React.createElement('button', {
-                onClick: stopRealtimeCollection,
-                style: {
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }
-              },
-                React.createElement('span', null, '⏹️'),
-                React.createElement('span', null, 'Parar Coleta')
-              ) :
-              React.createElement('button', {
-                onClick: startRealtimeCollection,
-                style: {
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }
-              },
-                React.createElement('span', null, '🚀'),
-                React.createElement('span', null, 'Iniciar Coleta')
-              ),
-            
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', marginTop: '16px' } },
             React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af' } },
-              isRealtimeActive ? 
-                React.createElement('span', { style: { color: '#10b981' } }, `🟢 Ativo - Última atualização: ${lastUpdate || 'Nunca'}`) :
-                React.createElement('span', { style: { color: '#6b7280' } }, '⚪ Inativo')
+              React.createElement('span', { style: { color: '#10b981' } }, `🟢 Coleta Automática Ativa - Última atualização: ${lastUpdate || 'Carregando...'}`)
             )
           )
         )
