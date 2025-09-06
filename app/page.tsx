@@ -187,8 +187,7 @@ export default function Home() {
               )
             )
           )
-        )
-    ),
+        ),
 
         React.createElement('div', { style: { marginTop: '24px', display: 'flex', gap: '24px', fontSize: '0.875rem' } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
