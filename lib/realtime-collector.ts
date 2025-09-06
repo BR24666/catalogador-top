@@ -89,13 +89,13 @@ export class RealtimeCollector {
     }
   }
 
-  // Salvar candle no Supabase
+  // Salvar candle no Supabase (tabela de tempo real)
   private async saveToSupabase(candle: CandleData) {
     try {
-      console.log('💾 Salvando candle no Supabase:', candle)
+      console.log('💾 Salvando candle no Supabase (realtime):', candle)
       
       const { error } = await supabase
-        .from('candle_data')
+        .from('realtime_candle_data')
         .upsert(candle, { 
           onConflict: 'pair,timeframe,timestamp' 
         })
@@ -103,20 +103,20 @@ export class RealtimeCollector {
       if (error) {
         console.error('❌ Erro ao salvar no Supabase:', error)
       } else {
-        console.log(`✅ Salvo no Supabase: ${candle.pair} ${candle.time_key} - ${candle.color}`)
+        console.log(`✅ Salvo no Supabase (realtime): ${candle.pair} ${candle.time_key} - ${candle.color}`)
       }
     } catch (error) {
       console.error('❌ Erro ao salvar no Supabase:', error)
     }
   }
 
-  // Buscar candles do Supabase
+  // Buscar candles do Supabase (tabela de tempo real)
   private async getCandlesFromSupabase(date: string, timeframe: string, pair: string): Promise<CandleData[]> {
     try {
-      console.log(`🔍 Buscando dados do Supabase: ${pair} ${timeframe} ${date}`)
+      console.log(`🔍 Buscando dados do Supabase (realtime): ${pair} ${timeframe} ${date}`)
       
       const { data, error } = await supabase
-        .from('candle_data')
+        .from('realtime_candle_data')
         .select('*')
         .eq('full_date', date)
         .eq('timeframe', timeframe)
@@ -128,7 +128,7 @@ export class RealtimeCollector {
         return []
       }
 
-      console.log(`📊 Encontrados ${data?.length || 0} candles no Supabase`)
+      console.log(`📊 Encontrados ${data?.length || 0} candles no Supabase (realtime)`)
       return data || []
     } catch (error) {
       console.error('❌ Erro ao buscar dados do Supabase:', error)

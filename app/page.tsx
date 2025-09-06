@@ -29,10 +29,13 @@ export default function Home() {
   const loadCandles = async () => {
     try {
       setLoading(true)
-      console.log(`🔄 Carregando dados: ${selectedDate} - ${selectedTimeframe}`)
+      console.log(`🔄 Carregando dados: ${selectedDate} - ${selectedTimeframe} - Aba: ${activeTab}`)
+      
+      // Escolher tabela baseada na aba ativa
+      const tableName = activeTab === 'realtime' ? 'realtime_candle_data' : 'historical_candle_data'
       
       const { data, error } = await supabase
-        .from('candle_data')
+        .from(tableName)
         .select('*')
         .eq('full_date', selectedDate)
         .eq('timeframe', selectedTimeframe)
@@ -44,7 +47,7 @@ export default function Home() {
         return
       }
       
-      console.log(`📊 Dados carregados: ${data?.length || 0} candles`)
+      console.log(`📊 Dados carregados da tabela ${tableName}: ${data?.length || 0} candles`)
       setCandles(data || [])
       updateStats(data || [])
       
@@ -166,6 +169,16 @@ export default function Home() {
       case '5m': return 12 // 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
       case '15m': return 4  // 0, 15, 30, 45
       default: return 60
+    }
+  }
+
+  // Função para obter o minuto real baseado no índice da coluna
+  const getMinuteFromColumn = (columnIndex: number, timeframe: string): number => {
+    switch (timeframe) {
+      case '1m': return columnIndex
+      case '5m': return columnIndex * 5
+      case '15m': return columnIndex * 15
+      default: return columnIndex
     }
   }
 
@@ -313,7 +326,7 @@ export default function Home() {
           React.createElement('div', { style: { display: 'inline-block' } },
             React.createElement('div', { style: { display: 'flex', marginBottom: '8px' } },
               React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center', fontWeight: 'bold' } }, 'Hora'),
-              ...Array.from({ length: 60 }, (_, i) => 
+              ...Array.from({ length: getMinuteColumns(selectedTimeframe) }, (_, i) => 
                 shouldShowMinute(i, selectedTimeframe) ? 
                   React.createElement('div', { 
                     key: i, 
@@ -326,9 +339,7 @@ export default function Home() {
                       margin: selectedTimeframe === '1m' ? '0 2px' : '0 1px'
                     } 
                   }, 
-                    selectedTimeframe === '1m' ? (i % 10 === 0 ? i : '') : 
-                    selectedTimeframe === '5m' ? (i % 5 === 0 ? i : '') :
-                    selectedTimeframe === '15m' ? (i % 15 === 0 ? i : '') : ''
+                    getMinuteFromColumn(i, selectedTimeframe).toString().padStart(2, '0')
                   ) : null
               ).filter(Boolean)
             ),
@@ -350,7 +361,9 @@ export default function Home() {
                             : '#ef4444'
                           : '#4b5563'
                       },
-                      title: candle ? `${candle.time_key} - ${candle.color} - $${candle.close_price}` : ''
+                      title: candle 
+                        ? `${candle.time_key} - ${candle.color} - $${candle.close_price}`
+                        : `${hourIndex.toString().padStart(2, '0')}:${getMinuteFromColumn(minuteIndex, selectedTimeframe).toString().padStart(2, '0')} - Sem dados`
                     }) : null
                 ).filter(Boolean)
               )
