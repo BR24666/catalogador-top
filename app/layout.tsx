@@ -1,13 +1,12 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import Navigation from '@/components/Navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Catalogador de Velas - BTC, XRP, SOL',
-  description: 'Sistema de catalogação de velas de criptomoedas em tempo real',
+  title: 'Catálogo de Velas SOLUSDT',
+  description: 'Visualização das cores das velas - Hora na linha horizontal, Minuto na coluna vertical',
 }
 
 export default function RootLayout({
@@ -17,12 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
-        <div className="min-h-screen bg-gray-900 text-white">
-          <Navigation />
-          {children}
-        </div>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }

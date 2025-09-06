@@ -2,31 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-gray-600;
-  }
-  body {
-    @apply bg-gray-900 text-white;
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
-@layer components {
-  .candle-green {
-    @apply bg-green-500 text-white;
-  }
-  
-  .candle-red {
-    @apply bg-red-500 text-white;
-  }
-  
-  .time-grid {
-    display: grid;
-    grid-template-columns: 80px repeat(60, 1fr);
-    gap: 1px;
-  }
-  
-  .minute-cell {
-    @apply w-4 h-4 text-xs flex items-center justify-center border border-gray-600;
-  }
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+.candle-green {
+  background-color: #10b981;
+}
+
+.candle-red {
+  background-color: #ef4444;
+}
+
+.candle-empty {
+  background-color: #374151;
 }
