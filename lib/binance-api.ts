@@ -37,17 +37,20 @@ export class BinanceAPI {
   async getKlines(symbol: string, interval: string, limit: number = 1): Promise<BinanceKline[]> {
     try {
       const url = `${this.baseUrl}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
+      console.log('🌐 Chamando API da Binance:', url)
       
       const response = await fetch(url)
       
       if (!response.ok) {
+        console.error('❌ Erro HTTP da Binance:', response.status, response.statusText)
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
       const data = await response.json()
+      console.log('✅ Resposta da Binance recebida:', data)
       return data
     } catch (error) {
-      console.error('Erro ao buscar dados da Binance:', error)
+      console.error('❌ Erro ao buscar dados da Binance:', error)
       throw error
     }
   }
@@ -56,15 +59,20 @@ export class BinanceAPI {
     try {
       const klines = await this.getKlines(symbol, interval, 1)
       
+      console.log('📊 Dados recebidos da Binance:', klines)
+      
       if (klines.length === 0) {
+        console.log('⚠️ Nenhum kline retornado da Binance')
         return null
       }
 
       const kline = klines[0]
+      console.log('📈 Kline processado:', kline)
       
       // Validar se o timestamp é válido
       if (!kline.openTime || isNaN(kline.openTime)) {
         console.error('Timestamp inválido recebido da Binance:', kline.openTime)
+        console.error('Estrutura completa do kline:', kline)
         return null
       }
       
