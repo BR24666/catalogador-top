@@ -28,6 +28,7 @@ export default function Home() {
   const loadCandles = async () => {
     try {
       setLoading(true)
+      console.log(`🔄 Carregando dados: ${selectedDate} - ${selectedTimeframe}`)
       
       const { data, error } = await supabase
         .from('candle_data')
@@ -38,15 +39,16 @@ export default function Home() {
         .order('timestamp', { ascending: true })
       
       if (error) {
-        console.error('Erro ao carregar dados:', error)
+        console.error('❌ Erro ao carregar dados:', error)
         return
       }
       
+      console.log(`📊 Dados carregados: ${data?.length || 0} candles`)
       setCandles(data || [])
       updateStats(data || [])
       
     } catch (error) {
-      console.error('Erro ao carregar dados:', error)
+      console.error('❌ Erro ao carregar dados:', error)
     } finally {
       setLoading(false)
     }
@@ -100,11 +102,13 @@ export default function Home() {
   }
 
   const createGrid = () => {
+    console.log(`🎯 Criando grid com ${candles.length} candles`)
     const grid = Array(24).fill(null).map(() => Array(60).fill(null))
     
     candles.forEach(candle => {
       if (candle.hour >= 0 && candle.hour < 24 && candle.minute >= 0 && candle.minute < 60) {
         grid[candle.hour][candle.minute] = candle
+        console.log(`📍 Posicionando vela: ${candle.hour}:${candle.minute} - ${candle.color}`)
       }
     })
     
