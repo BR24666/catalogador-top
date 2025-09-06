@@ -14,6 +14,7 @@ interface BinanceKline {
 }
 
 export interface CandleData {
+  id?: string
   pair: string
   timeframe: string
   timestamp: string

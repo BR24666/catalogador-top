@@ -3,24 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { realtimeCollector } from '../lib/realtime-collector'
+import { CandleData } from '../lib/binance-api'
 
 const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-interface CandleData {
-  id: string
-  pair: string
-  timeframe: string
-  timestamp: string
-  open_price: number
-  close_price: number
-  color: 'GREEN' | 'RED'
-  hour: number
-  minute: number
-  full_date: string
-  time_key: string
-}
 
 export default function Home() {
   const [candles, setCandles] = useState<CandleData[]>([])
