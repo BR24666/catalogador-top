@@ -158,8 +158,14 @@ export default function Home() {
 
   // Função para verificar se um minuto deve ser exibido no grid
   const shouldShowMinute = (minute: number, timeframe: string): boolean => {
-    const interval = getMinuteInterval(timeframe)
-    return minute % interval === 0
+    // Para 1m, mostrar todos os minutos (0-59)
+    // Para 5m e 15m, mostrar apenas os intervalos corretos
+    switch (timeframe) {
+      case '1m': return true // Mostrar todos os 60 minutos
+      case '5m': return minute % 5 === 0 // 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+      case '15m': return minute % 15 === 0 // 0, 15, 30, 45
+      default: return true
+    }
   }
 
   // Função para obter o número de colunas baseado no timeframe
@@ -327,45 +333,49 @@ export default function Home() {
             React.createElement('div', { style: { display: 'flex', marginBottom: '8px' } },
               React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center', fontWeight: 'bold' } }, 'Hora'),
               ...Array.from({ length: getMinuteColumns(selectedTimeframe) }, (_, i) => 
-                shouldShowMinute(i, selectedTimeframe) ? 
-                  React.createElement('div', { 
-                    key: i, 
-                    style: { 
-                      width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px', 
-                      height: '24px', 
-                      fontSize: '0.75rem', 
-                      color: '#9ca3af', 
-                      textAlign: 'center',
-                      margin: selectedTimeframe === '1m' ? '0 2px' : '0 1px'
-                    } 
-                  }, 
-                    getMinuteFromColumn(i, selectedTimeframe).toString().padStart(2, '0')
-                  ) : null
-              ).filter(Boolean)
+                React.createElement('div', { 
+                  key: i, 
+                  style: { 
+                    width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px', 
+                    height: '24px', 
+                    fontSize: '0.6rem', 
+                    color: '#9ca3af', 
+                    textAlign: 'center',
+                    margin: selectedTimeframe === '1m' ? '0 1px' : '0 1px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  } 
+                }, 
+                  // Mostrar apenas alguns minutos para legibilidade
+                  selectedTimeframe === '1m' ? (i % 10 === 0 ? i.toString().padStart(2, '0') : '') :
+                  selectedTimeframe === '5m' ? (i % 2 === 0 ? (i * 5).toString().padStart(2, '0') : '') :
+                  selectedTimeframe === '15m' ? (i * 15).toString().padStart(2, '0') : ''
+                )
+              )
             ),
             ...grid.map((hour, hourIndex) =>
               React.createElement('div', { key: hourIndex, style: { display: 'flex', alignItems: 'center', marginBottom: '4px' } },
                 React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'right', paddingRight: '8px', fontWeight: 'bold' } }, `${hourIndex.toString().padStart(2, '0')}:00`),
                 ...hour.map((candle, minuteIndex) => 
-                  shouldShowMinute(minuteIndex, selectedTimeframe) ?
-                    React.createElement('div', {
-                      key: `${hourIndex}-${minuteIndex}`,
-                      style: {
-                        width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px',
-                        height: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '10px' : '12px',
-                        margin: selectedTimeframe === '1m' ? '0 2px' : '0 1px',
-                        borderRadius: '2px',
-                        backgroundColor: candle 
-                          ? candle.color === 'GREEN' 
-                            ? '#22c55e' 
-                            : '#ef4444'
-                          : '#4b5563'
-                      },
-                      title: candle 
-                        ? `${candle.time_key} - ${candle.color} - $${candle.close_price}`
-                        : `${hourIndex.toString().padStart(2, '0')}:${getMinuteFromColumn(minuteIndex, selectedTimeframe).toString().padStart(2, '0')} - Sem dados`
-                    }) : null
-                ).filter(Boolean)
+                  React.createElement('div', {
+                    key: `${hourIndex}-${minuteIndex}`,
+                    style: {
+                      width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px',
+                      height: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '10px' : '12px',
+                      margin: selectedTimeframe === '1m' ? '0 1px' : '0 1px',
+                      borderRadius: '2px',
+                      backgroundColor: candle 
+                        ? candle.color === 'GREEN' 
+                          ? '#22c55e' 
+                          : '#ef4444'
+                        : '#4b5563'
+                    },
+                    title: candle 
+                      ? `${candle.time_key} - ${candle.color} - $${candle.close_price}`
+                      : `${hourIndex.toString().padStart(2, '0')}:${getMinuteFromColumn(minuteIndex, selectedTimeframe).toString().padStart(2, '0')} - Sem dados`
+                  })
+                )
               )
             )
           )
