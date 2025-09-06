@@ -60,6 +60,7 @@ export default function Home() {
     
     // Configurar callback para atualizações
     realtimeCollector.onDataUpdate = (newCandles) => {
+      console.log(`🔄 Atualizando grid com ${newCandles.length} candles`)
       setCandles(newCandles)
       setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
       updateStats(newCandles)

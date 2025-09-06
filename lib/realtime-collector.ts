@@ -76,10 +76,11 @@ export class RealtimeCollector {
       // Salvar no Supabase
       await this.saveToSupabase(candle)
       
-      // Notificar atualização
+      // Notificar atualização apenas se for um novo candle
       if (this.onDataUpdate) {
         // Buscar dados atualizados do Supabase para notificar
         const updatedCandles = await this.getCandlesFromSupabase(candle.full_date, timeframe, pair)
+        console.log(`🔄 Notificando atualização com ${updatedCandles.length} candles`)
         this.onDataUpdate(updatedCandles)
       }
       
