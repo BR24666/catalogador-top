@@ -19,14 +19,18 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
   const [loading, setLoading] = useState(false)
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyResult | null>(null)
   const [showWaveAnalysis, setShowWaveAnalysis] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<string>('')
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
 
-  const loadAndAnalyze = async () => {
+  const loadAndAnalyze = async (useRealtimeData = false) => {
     try {
       setLoading(true)
-      console.log(`🔍 Analisando estratégias para ${selectedDate} - ${selectedTimeframe}`)
+      const dataSource = useRealtimeData ? 'realtime_candle_data' : 'historical_candle_data'
+      console.log(`🔍 Analisando estratégias para ${selectedDate} - ${selectedTimeframe} (${dataSource})`)
       
       const { data, error } = await supabase
-        .from('historical_candle_data')
+        .from(dataSource)
         .select('*')
         .eq('full_date', selectedDate)
         .eq('timeframe', selectedTimeframe)
@@ -45,6 +49,7 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
         
         setStrategies(results)
         setWaveAnalysis(waves)
+        setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
         console.log(`📊 Análise concluída: ${results.length} estratégias analisadas`)
         console.log(`🌊 Análise de ondas: ${waves.upcomingWaves.length} oportunidades identificadas`)
       }
@@ -59,6 +64,46 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
   useEffect(() => {
     loadAndAnalyze()
   }, [selectedDate, selectedTimeframe])
+
+  // Controle de atualização automática
+  useEffect(() => {
+    if (autoRefresh && showWaveAnalysis) {
+      // Atualizar a cada 2 minutos quando em modo tempo real
+      const interval = setInterval(() => {
+        loadAndAnalyze(true) // Usar dados em tempo real
+      }, 120000) // 2 minutos
+      
+      setRefreshInterval(interval)
+      
+      return () => {
+        if (interval) clearInterval(interval)
+      }
+    } else if (refreshInterval) {
+      clearInterval(refreshInterval)
+      setRefreshInterval(null)
+    }
+  }, [autoRefresh, showWaveAnalysis])
+
+  // Limpar interval ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+      }
+    }
+  }, [refreshInterval])
+
+  const handleRefresh = () => {
+    if (showWaveAnalysis) {
+      loadAndAnalyze(true) // Usar dados em tempo real para análise de ondas
+    } else {
+      loadAndAnalyze() // Usar dados históricos para análise normal
+    }
+  }
+
+  const toggleAutoRefresh = () => {
+    setAutoRefresh(!autoRefresh)
+  }
 
   const getStrategyIcon = (strategy: string) => {
     const icons: { [key: string]: string } = {
@@ -127,18 +172,47 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
     return React.createElement('div', null,
       // Status atual
       React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '20px', borderRadius: '12px', marginBottom: '24px' } },
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', marginBottom: '16px' } },
-          React.createElement('div', { 
-            style: { 
-              width: '12px', 
-              height: '12px', 
-              borderRadius: '50%', 
-              backgroundColor: getStatusColor(waveAnalysis.currentStatus),
-              marginRight: '12px'
-            } 
-          }),
-          React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: 'white' } }, 
-            `Status: ${waveAnalysis.currentStatus.replace('_', ' ')}`
+        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' } },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center' } },
+            React.createElement('div', { 
+              style: { 
+                width: '12px', 
+                height: '12px', 
+                borderRadius: '50%', 
+                backgroundColor: getStatusColor(waveAnalysis.currentStatus),
+                marginRight: '12px',
+                animation: waveAnalysis.currentStatus === 'ONDA_ATIVA' ? 'pulse 2s infinite' : 'none'
+              } 
+            }),
+            React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: 'white' } }, 
+              `Status: ${waveAnalysis.currentStatus.replace('_', ' ')}`
+            )
+          ),
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+            autoRefresh && React.createElement('div', { 
+              style: { 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px',
+                backgroundColor: '#22c55e',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                color: 'white'
+              } 
+            },
+              React.createElement('span', { style: { animation: 'pulse 1s infinite' } }, '●'),
+              React.createElement('span', null, 'AUTO')
+            ),
+            lastUpdate && React.createElement('div', { 
+              style: { 
+                fontSize: '0.75rem', 
+                color: '#9ca3af',
+                backgroundColor: '#374151',
+                padding: '4px 8px',
+                borderRadius: '12px'
+              } 
+            }, `Atualizado: ${lastUpdate}`)
           )
         ),
         React.createElement('p', { style: { color: '#9ca3af', marginBottom: '16px' } }, waveAnalysis.riskAssessment),
@@ -259,26 +333,74 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
       React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' } },
         React.createElement('div', null,
           React.createElement('h2', { style: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '8px', color: 'white' } }, 'Análise de Estratégias Probabilísticas'),
-          React.createElement('p', { style: { color: '#9ca3af' } }, `Análise para ${selectedDate} - ${selectedTimeframe}`)
+          React.createElement('p', { style: { color: '#9ca3af' } }, `Análise para ${selectedDate} - ${selectedTimeframe}`),
+          lastUpdate && React.createElement('p', { style: { color: '#6b7280', fontSize: '0.875rem' } }, `Última atualização: ${lastUpdate}`)
         ),
-        React.createElement('button', {
-          onClick: () => setShowWaveAnalysis(!showWaveAnalysis),
-          style: {
-            padding: '12px 24px',
-            backgroundColor: showWaveAnalysis ? '#ef4444' : '#22c55e',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }
-        },
-          React.createElement('span', null, showWaveAnalysis ? '📊' : '🌊'),
-          React.createElement('span', null, showWaveAnalysis ? 'Ver Estratégias' : 'Surf de Ondas')
+        React.createElement('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } },
+          // Botão de atualização manual
+          React.createElement('button', {
+            onClick: handleRefresh,
+            disabled: loading,
+            style: {
+              padding: '10px 16px',
+              backgroundColor: loading ? '#6b7280' : '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              opacity: loading ? 0.6 : 1
+            }
+          },
+            React.createElement('span', { style: { animation: loading ? 'spin 1s linear infinite' : 'none' } }, '🔄'),
+            React.createElement('span', null, loading ? 'Atualizando...' : 'Atualizar')
+          ),
+          
+          // Botão de auto-refresh (apenas para análise de ondas)
+          showWaveAnalysis && React.createElement('button', {
+            onClick: toggleAutoRefresh,
+            style: {
+              padding: '10px 16px',
+              backgroundColor: autoRefresh ? '#22c55e' : '#6b7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }
+          },
+            React.createElement('span', null, autoRefresh ? '⏸️' : '▶️'),
+            React.createElement('span', null, autoRefresh ? 'Auto ON' : 'Auto OFF')
+          ),
+          
+          // Botão principal de visualização
+          React.createElement('button', {
+            onClick: () => setShowWaveAnalysis(!showWaveAnalysis),
+            style: {
+              padding: '12px 24px',
+              backgroundColor: showWaveAnalysis ? '#ef4444' : '#22c55e',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, showWaveAnalysis ? '📊' : '🌊'),
+            React.createElement('span', null, showWaveAnalysis ? 'Ver Estratégias' : 'Surf de Ondas')
+          )
         )
       ),
       React.createElement('div', { style: { display: 'flex', gap: '16px', flexWrap: 'wrap' } },
@@ -530,6 +652,23 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
           )
         )
       )
-    )
+    ),
+    
+    // Estilos CSS para animações
+    React.createElement('style', null, `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+    `)
   )
 }
