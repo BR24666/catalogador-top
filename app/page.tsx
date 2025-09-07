@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { realtimeCollector } from '../lib/realtime-collector'
 import { CandleData } from '../lib/binance-api'
+import StrategyAnalysis from '../components/StrategyAnalysis'
 
 const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
@@ -11,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'realtime' | 'historical'>('realtime')
+  const [activeTab, setActiveTab] = useState<'realtime' | 'historical' | 'analysis'>('realtime')
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState('2025-09-05')
@@ -241,6 +242,25 @@ export default function Home() {
           },
             React.createElement('span', null, '📊'),
             React.createElement('span', null, 'Análise Histórica')
+          ),
+          React.createElement('button', {
+            onClick: () => setActiveTab('analysis'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'analysis' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '🧠'),
+            React.createElement('span', null, 'Análise de Estratégias')
           )
         ),
         
@@ -269,6 +289,7 @@ export default function Home() {
               )
             )
           ) :
+        activeTab === 'historical' ?
           // Aba Análise Histórica
           React.createElement('div', null,
             React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
@@ -299,10 +320,44 @@ export default function Home() {
               
               React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025')
             )
+          ) :
+          // Aba Análise de Estratégias
+          React.createElement('div', null,
+            React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
+              React.createElement('div', null,
+                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Data:'),
+                React.createElement('input', {
+                  type: 'date',
+                  value: selectedDate,
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value),
+                  min: '2025-08-06',
+                  max: '2025-09-05',
+                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
+                })
+              ),
+              
+              React.createElement('div', null,
+                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
+                React.createElement('select', {
+                  value: selectedTimeframe,
+                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
+                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
+                },
+                  React.createElement('option', { value: '1m' }, '1 minuto'),
+                  React.createElement('option', { value: '5m' }, '5 minutos'),
+                  React.createElement('option', { value: '15m' }, '15 minutos')
+                )
+              ),
+              
+              React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Análise de 10 estratégias probabilísticas')
+            )
           )
       ),
 
-      React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' } },
+      // Renderizar conteúdo baseado na aba ativa
+      activeTab === 'analysis' ? 
+        React.createElement(StrategyAnalysis, { selectedDate, selectedTimeframe }) :
+        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' } },
         React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
           React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' } }, stats.total),
           React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Total de Velas')

@@ -100,8 +100,23 @@ async function collectHistoricalData() {
   const pair = 'SOLUSDT'
   const timeframes = ['1m', '5m', '15m']
   
-  // Definir períodos para coleta (2 meses adicionais)
+  // Definir períodos para coleta (6 meses adicionais)
   const periods = [
+    {
+      name: 'Julho 2025',
+      start: new Date('2025-07-01T00:00:00Z').getTime(),
+      end: new Date('2025-07-31T23:59:59Z').getTime()
+    },
+    {
+      name: 'Agosto 2025',
+      start: new Date('2025-08-01T00:00:00Z').getTime(),
+      end: new Date('2025-08-31T23:59:59Z').getTime()
+    },
+    {
+      name: 'Setembro 2025',
+      start: new Date('2025-09-01T00:00:00Z').getTime(),
+      end: new Date('2025-09-30T23:59:59Z').getTime()
+    },
     {
       name: 'Outubro 2025',
       start: new Date('2025-10-01T00:00:00Z').getTime(),
@@ -111,6 +126,11 @@ async function collectHistoricalData() {
       name: 'Novembro 2025',
       start: new Date('2025-11-01T00:00:00Z').getTime(),
       end: new Date('2025-11-30T23:59:59Z').getTime()
+    },
+    {
+      name: 'Dezembro 2025',
+      start: new Date('2025-12-01T00:00:00Z').getTime(),
+      end: new Date('2025-12-31T23:59:59Z').getTime()
     }
   ]
   
