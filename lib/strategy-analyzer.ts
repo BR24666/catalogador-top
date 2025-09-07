@@ -19,6 +19,17 @@ export interface CandleData {
   date_key: string
 }
 
+export interface CycleData {
+  startTime: string
+  endTime: string
+  duration: number
+  consecutiveWins: number
+  day: string
+  hour: number
+  month: string
+  year: number
+}
+
 export interface StrategyResult {
   strategy: string
   description: string
@@ -43,6 +54,17 @@ export interface StrategyResult {
   currentStreak: number
   isIn100Percent: boolean
   timeIn100Percent: number
+  // Novos campos para análise de ciclos
+  cycles: CycleData[]
+  totalCycles: number
+  minCycleWins: number
+  maxCycleWins: number
+  avgCycleWins: number
+  cyclesByDay: { [day: string]: CycleData[] }
+  cyclesByMonth: { [month: string]: CycleData[] }
+  currentCycleStart?: string
+  currentCycleWins: number
+  guaranteedMinWins: number // Mínimo garantido baseado em todos os ciclos
 }
 
 export class StrategyAnalyzer {
@@ -367,25 +389,79 @@ export class StrategyAnalyzer {
     let timeIn100Percent = 0
     let isIn100Percent = false
     
+    // Variáveis para análise de ciclos
+    const cycles: CycleData[] = []
+    let currentCycleStart: string | null = null
+    let currentCycleWins = 0
+    let minCycleWins = Infinity
+    let maxCycleWins = 0
+    let totalCycleWins = 0
+    const cyclesByDay: { [day: string]: CycleData[] } = {}
+    const cyclesByMonth: { [month: string]: CycleData[] } = {}
+    
     for (let i = 0; i < this.candles.length; i++) {
       const predicted = signalFn(this.candles, i)
       if (predicted && i + 1 < this.candles.length) {
         const actual = this.candles[i + 1].color
         const isWin = predicted === actual
+        const currentTime = this.candles[i].timestamp
+        const currentDate = new Date(currentTime)
+        const dayName = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' })
+        const monthName = currentDate.toLocaleDateString('pt-BR', { month: 'long' })
         
         trades.push({
           predicted,
           actual,
-          timestamp: this.candles[i].timestamp,
+          timestamp: currentTime,
           hour: this.candles[i].hour,
-          day: new Date(this.candles[i].timestamp).getDay()
+          day: currentDate.getDay()
         })
         
         if (isWin) {
           consecutiveWins++
           currentStreak++
-          if (isIn100Percent) timeIn100Percent++
+          currentCycleWins++
+          
+          // Iniciar ciclo de 100% se não estiver ativo
+          if (!isIn100Percent && consecutiveWins >= 3) {
+            isIn100Percent = true
+            currentCycleStart = currentTime
+            currentCycleWins = consecutiveWins
+            timeIn100Percent = 1
+          } else if (isIn100Percent) {
+            timeIn100Percent++
+            currentCycleWins = consecutiveWins
+          }
         } else {
+          // Finalizar ciclo de 100% se estava ativo
+          if (isIn100Percent && currentCycleStart) {
+            const cycleData: CycleData = {
+              startTime: currentCycleStart,
+              endTime: currentTime,
+              duration: timeIn100Percent,
+              consecutiveWins: currentCycleWins,
+              day: dayName,
+              hour: this.candles[i].hour,
+              month: monthName,
+              year: currentDate.getFullYear()
+            }
+            
+            cycles.push(cycleData)
+            
+            // Organizar por dia e mês
+            if (!cyclesByDay[dayName]) cyclesByDay[dayName] = []
+            cyclesByDay[dayName].push(cycleData)
+            
+            if (!cyclesByMonth[monthName]) cyclesByMonth[monthName] = []
+            cyclesByMonth[monthName].push(cycleData)
+            
+            // Atualizar estatísticas de ciclos
+            minCycleWins = Math.min(minCycleWins, currentCycleWins)
+            maxCycleWins = Math.max(maxCycleWins, currentCycleWins)
+            totalCycleWins += currentCycleWins
+          }
+          
+          // Resetar contadores
           if (consecutiveWins > 0) {
             maxConsecutiveWins = Math.max(maxConsecutiveWins, consecutiveWins)
             minConsecutiveWins = Math.min(minConsecutiveWins, consecutiveWins)
@@ -394,13 +470,41 @@ export class StrategyAnalyzer {
           currentStreak = 0
           isIn100Percent = false
           timeIn100Percent = 0
-        }
-        
-        // Verificar se está em 100% de acertividade
-        if (consecutiveWins >= 3) {
-          isIn100Percent = true
+          currentCycleStart = null
+          currentCycleWins = 0
         }
       }
+    }
+    
+    // Se ainda está em ciclo de 100%, finalizar com dados atuais
+    if (isIn100Percent && currentCycleStart) {
+      const lastCandle = this.candles[this.candles.length - 1]
+      const currentDate = new Date(lastCandle.timestamp)
+      const dayName = currentDate.toLocaleDateString('pt-BR', { weekday: 'long' })
+      const monthName = currentDate.toLocaleDateString('pt-BR', { month: 'long' })
+      
+      const cycleData: CycleData = {
+        startTime: currentCycleStart,
+        endTime: lastCandle.timestamp,
+        duration: timeIn100Percent,
+        consecutiveWins: currentCycleWins,
+        day: dayName,
+        hour: lastCandle.hour,
+        month: monthName,
+        year: currentDate.getFullYear()
+      }
+      
+      cycles.push(cycleData)
+      
+      if (!cyclesByDay[dayName]) cyclesByDay[dayName] = []
+      cyclesByDay[dayName].push(cycleData)
+      
+      if (!cyclesByMonth[monthName]) cyclesByMonth[monthName] = []
+      cyclesByMonth[monthName].push(cycleData)
+      
+      minCycleWins = Math.min(minCycleWins, currentCycleWins)
+      maxCycleWins = Math.max(maxCycleWins, currentCycleWins)
+      totalCycleWins += currentCycleWins
     }
     
     const wins = trades.filter(t => t.predicted === t.actual).length
@@ -448,7 +552,18 @@ export class StrategyAnalyzer {
       },
       currentStreak,
       isIn100Percent,
-      timeIn100Percent
+      timeIn100Percent,
+      // Dados de ciclos de 100%
+      cycles,
+      totalCycles: cycles.length,
+      minCycleWins: minCycleWins === Infinity ? 0 : minCycleWins,
+      maxCycleWins,
+      avgCycleWins: cycles.length > 0 ? Math.round(totalCycleWins / cycles.length) : 0,
+      cyclesByDay,
+      cyclesByMonth,
+      currentCycleStart: currentCycleStart || undefined,
+      currentCycleWins: isIn100Percent ? currentCycleWins : 0,
+      guaranteedMinWins: minCycleWins === Infinity ? 0 : minCycleWins
     }
   }
 

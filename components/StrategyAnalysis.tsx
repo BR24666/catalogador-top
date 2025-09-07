@@ -149,19 +149,23 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
             )
           ),
 
-          // Wins consecutivos
-          React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' } },
+          // Análise de ciclos de 100%
+          React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' } },
             React.createElement('div', { style: { textAlign: 'center', backgroundColor: '#374151', padding: '8px', borderRadius: '6px' } },
-              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: '#22c55e' } }, strategy.maxConsecutiveWins.toString()),
-              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Máx. Wins')
+              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: '#22c55e' } }, strategy.totalCycles.toString()),
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Total Ciclos')
             ),
             React.createElement('div', { style: { textAlign: 'center', backgroundColor: '#374151', padding: '8px', borderRadius: '6px' } },
-              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: '#f97316' } }, strategy.minConsecutiveWins.toString()),
-              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Mín. Wins')
+              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: '#ef4444' } }, strategy.guaranteedMinWins.toString()),
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Mín. Garantido')
+            ),
+            React.createElement('div', { style: { textAlign: 'center', backgroundColor: '#374151', padding: '8px', borderRadius: '6px' } },
+              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: '#60a5fa' } }, strategy.avgCycleWins.toString()),
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Média Ciclos')
             ),
             React.createElement('div', { style: { textAlign: 'center', backgroundColor: strategy.isIn100Percent ? '#22c55e' : '#374151', padding: '8px', borderRadius: '6px' } },
-              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: 'white' } }, strategy.currentStreak.toString()),
-              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Atual')
+              React.createElement('div', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: 'white' } }, strategy.currentCycleWins.toString()),
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, 'Ciclo Atual')
             )
           ),
 
@@ -278,6 +282,45 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
             React.createElement('div', { style: { backgroundColor: '#374151', padding: '12px', borderRadius: '8px' } },
               React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Melhor Hora:'),
               React.createElement('div', { style: { color: 'white', fontWeight: 'bold' } }, `${selectedStrategy.bestHour.toString().padStart(2, '0')}:00`)
+            )
+          )
+        ),
+
+        // Análise de Ciclos de 100%
+        React.createElement('div', { style: { marginBottom: '24px' } },
+          React.createElement('h4', { style: { color: 'white', marginBottom: '12px' } }, 'Análise de Ciclos de 100%:'),
+          React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' } },
+            React.createElement('div', { style: { backgroundColor: '#374151', padding: '12px', borderRadius: '8px' } },
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Total de Ciclos:'),
+              React.createElement('div', { style: { color: 'white', fontWeight: 'bold' } }, selectedStrategy.totalCycles.toString())
+            ),
+            React.createElement('div', { style: { backgroundColor: '#374151', padding: '12px', borderRadius: '8px' } },
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Mínimo Garantido:'),
+              React.createElement('div', { style: { color: '#ef4444', fontWeight: 'bold' } }, `${selectedStrategy.guaranteedMinWins} wins`)
+            ),
+            React.createElement('div', { style: { backgroundColor: '#374151', padding: '12px', borderRadius: '8px' } },
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Máximo de Ciclos:'),
+              React.createElement('div', { style: { color: '#22c55e', fontWeight: 'bold' } }, `${selectedStrategy.maxCycleWins} wins`)
+            ),
+            React.createElement('div', { style: { backgroundColor: '#374151', padding: '12px', borderRadius: '8px' } },
+              React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Média de Ciclos:'),
+              React.createElement('div', { style: { color: '#60a5fa', fontWeight: 'bold' } }, `${selectedStrategy.avgCycleWins} wins`)
+            )
+          ),
+          
+          // Ciclos por dia da semana
+          React.createElement('div', { style: { marginBottom: '16px' } },
+            React.createElement('h5', { style: { color: 'white', marginBottom: '8px', fontSize: '1rem' } }, 'Ciclos por Dia da Semana:'),
+            React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' } },
+              ...Object.entries(selectedStrategy.cyclesByDay).map(([day, cycles]) =>
+                React.createElement('div', { key: day, style: { backgroundColor: '#374151', padding: '8px', borderRadius: '6px' } },
+                  React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem' } }, day),
+                  React.createElement('div', { style: { color: 'white', fontWeight: 'bold' } }, `${cycles.length} ciclos`),
+                  React.createElement('div', { style: { color: '#60a5fa', fontSize: '0.75rem' } }, 
+                    `Mín: ${Math.min(...cycles.map(c => c.consecutiveWins))} | Máx: ${Math.max(...cycles.map(c => c.consecutiveWins))}`
+                  )
+                )
+              )
             )
           )
         ),
