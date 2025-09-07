@@ -30,6 +30,32 @@ export interface CycleData {
   year: number
 }
 
+export interface WavePrediction {
+  strategyId: string
+  strategyName: string
+  nextWaveProbability: number
+  expectedMinWins: number
+  confidenceLevel: 'BAIXA' | 'MÉDIA' | 'ALTA' | 'MUITO_ALTA'
+  bestEntryTime: string
+  bestDay: string
+  bestHour: number
+  riskLevel: 'BAIXO' | 'MÉDIO' | 'ALTO'
+  capitalMultiplier: number
+  recommendedBetSize: number
+  timeToNextWave: string
+  patternMatch: number
+  historicalAccuracy: number
+}
+
+export interface WaveAnalysis {
+  currentStatus: 'AGUARDANDO' | 'PREPARANDO' | 'ONDA_ATIVA' | 'FINALIZANDO'
+  activeWaves: WavePrediction[]
+  upcomingWaves: WavePrediction[]
+  bestOpportunity: WavePrediction | null
+  totalExpectedReturn: number
+  riskAssessment: string
+}
+
 export interface StrategyResult {
   strategy: string
   description: string
@@ -644,5 +670,312 @@ export class StrategyAnalyzer {
 
   public getStrategiesIn100Percent(): StrategyResult[] {
     return this.getStrategyResults().filter(s => s.isIn100Percent)
+  }
+
+  // Análise de ondas para previsão de sequências
+  analyzeWaves(): WaveAnalysis {
+    const currentTime = new Date()
+    const currentHour = currentTime.getHours()
+    const currentDay = currentTime.toLocaleDateString('pt-BR', { weekday: 'long' })
+    
+    const activeWaves: WavePrediction[] = []
+    const upcomingWaves: WavePrediction[] = []
+    
+    // Analisar cada estratégia para prever próximas ondas
+    this.strategies.forEach((strategy, strategyId) => {
+      const prediction = this.predictNextWave(strategy, strategyId)
+      
+      if (prediction.nextWaveProbability >= 70) {
+        if (strategy.isIn100Percent) {
+          activeWaves.push(prediction)
+        } else {
+          upcomingWaves.push(prediction)
+        }
+      }
+    })
+    
+    // Ordenar por probabilidade e retorno esperado
+    upcomingWaves.sort((a, b) => {
+      const scoreA = a.nextWaveProbability * a.capitalMultiplier
+      const scoreB = b.nextWaveProbability * b.capitalMultiplier
+      return scoreB - scoreA
+    })
+    
+    const bestOpportunity = upcomingWaves.length > 0 ? upcomingWaves[0] : null
+    const totalExpectedReturn = upcomingWaves.reduce((sum, wave) => sum + wave.capitalMultiplier, 0)
+    
+    // Determinar status atual
+    let currentStatus: 'AGUARDANDO' | 'PREPARANDO' | 'ONDA_ATIVA' | 'FINALIZANDO' = 'AGUARDANDO'
+    if (activeWaves.length > 0) {
+      currentStatus = 'ONDA_ATIVA'
+    } else if (upcomingWaves.length > 0 && bestOpportunity && bestOpportunity.nextWaveProbability >= 80) {
+      currentStatus = 'PREPARANDO'
+    }
+    
+    // Avaliação de risco
+    const riskLevel = this.calculateRiskLevel(upcomingWaves)
+    const riskAssessment = this.generateRiskAssessment(riskLevel, upcomingWaves.length)
+    
+    return {
+      currentStatus,
+      activeWaves,
+      upcomingWaves,
+      bestOpportunity,
+      totalExpectedReturn,
+      riskAssessment
+    }
+  }
+
+  private predictNextWave(strategy: StrategyResult, strategyId: string): WavePrediction {
+    const currentTime = new Date()
+    const currentHour = currentTime.getHours()
+    const currentDay = currentTime.toLocaleDateString('pt-BR', { weekday: 'long' })
+    
+    // Analisar padrões históricos por dia/hora
+    const dayPatterns = this.analyzeDayPatterns(strategy.cyclesByDay)
+    const hourPatterns = this.analyzeHourPatterns(strategy.cycles)
+    
+    // Calcular probabilidade baseada em padrões
+    const dayProbability = dayPatterns[currentDay] || 0
+    const hourProbability = hourPatterns[currentHour] || 0
+    const timePatternProbability = this.analyzeTimePatterns(strategy.cycles, currentTime)
+    
+    // Probabilidade combinada
+    const nextWaveProbability = Math.min(95, Math.round(
+      (dayProbability * 0.4) + 
+      (hourProbability * 0.4) + 
+      (timePatternProbability * 0.2)
+    ))
+    
+    // Calcular confiança
+    let confidenceLevel: 'BAIXA' | 'MÉDIA' | 'ALTA' | 'MUITO_ALTA' = 'BAIXA'
+    if (nextWaveProbability >= 90) confidenceLevel = 'MUITO_ALTA'
+    else if (nextWaveProbability >= 80) confidenceLevel = 'ALTA'
+    else if (nextWaveProbability >= 70) confidenceLevel = 'MÉDIA'
+    
+    // Calcular retorno esperado
+    const expectedMinWins = strategy.guaranteedMinWins
+    const capitalMultiplier = Math.pow(2, expectedMinWins) // Dobra a cada win
+    const recommendedBetSize = Math.min(10, Math.max(1, Math.floor(nextWaveProbability / 10)))
+    
+    // Determinar nível de risco
+    let riskLevel: 'BAIXO' | 'MÉDIO' | 'ALTO' = 'ALTO'
+    if (nextWaveProbability >= 85 && expectedMinWins >= 3) riskLevel = 'BAIXO'
+    else if (nextWaveProbability >= 75 && expectedMinWins >= 2) riskLevel = 'MÉDIO'
+    
+    // Encontrar melhor horário baseado em padrões
+    const bestTimeSlot = this.findBestTimeSlot(strategy.cycles)
+    
+    // Calcular tempo até próxima onda
+    const timeToNextWave = this.calculateTimeToNextWave(strategy.cycles, currentTime)
+    
+    // Match de padrão histórico
+    const patternMatch = this.calculatePatternMatch(strategy.cycles, currentTime)
+    
+    return {
+      strategyId,
+      strategyName: strategy.strategy,
+      nextWaveProbability,
+      expectedMinWins,
+      confidenceLevel,
+      bestEntryTime: bestTimeSlot.time,
+      bestDay: bestTimeSlot.day,
+      bestHour: bestTimeSlot.hour,
+      riskLevel,
+      capitalMultiplier,
+      recommendedBetSize,
+      timeToNextWave,
+      patternMatch,
+      historicalAccuracy: strategy.winRate
+    }
+  }
+
+  private analyzeDayPatterns(cyclesByDay: { [day: string]: CycleData[] }): { [day: string]: number } {
+    const patterns: { [day: string]: number } = {}
+    const totalCycles = Object.values(cyclesByDay).flat().length
+    
+    Object.entries(cyclesByDay).forEach(([day, cycles]) => {
+      if (cycles.length > 0) {
+        const avgWins = cycles.reduce((sum, cycle) => sum + cycle.consecutiveWins, 0) / cycles.length
+        const frequency = (cycles.length / totalCycles) * 100
+        patterns[day] = Math.min(95, Math.round(frequency + (avgWins * 5)))
+      }
+    })
+    
+    return patterns
+  }
+
+  private analyzeHourPatterns(cycles: CycleData[]): { [hour: number]: number } {
+    const hourStats: { [hour: number]: { count: number; totalWins: number } } = {}
+    
+    cycles.forEach(cycle => {
+      if (!hourStats[cycle.hour]) {
+        hourStats[cycle.hour] = { count: 0, totalWins: 0 }
+      }
+      hourStats[cycle.hour].count++
+      hourStats[cycle.hour].totalWins += cycle.consecutiveWins
+    })
+    
+    const patterns: { [hour: number]: number } = {}
+    Object.entries(hourStats).forEach(([hour, stats]) => {
+      const avgWins = stats.totalWins / stats.count
+      const frequency = (stats.count / cycles.length) * 100
+      patterns[parseInt(hour)] = Math.min(95, Math.round(frequency + (avgWins * 3)))
+    })
+    
+    return patterns
+  }
+
+  private analyzeTimePatterns(cycles: CycleData[], currentTime: Date): number {
+    // Analisar padrões de intervalo entre ciclos
+    if (cycles.length < 2) return 50
+    
+    const intervals: number[] = []
+    for (let i = 1; i < cycles.length; i++) {
+      const prevEnd = new Date(cycles[i-1].endTime)
+      const currStart = new Date(cycles[i].startTime)
+      const interval = (currStart.getTime() - prevEnd.getTime()) / (1000 * 60 * 60) // horas
+      intervals.push(interval)
+    }
+    
+    const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length
+    const lastCycleEnd = new Date(cycles[cycles.length - 1].endTime)
+    const timeSinceLastCycle = (currentTime.getTime() - lastCycleEnd.getTime()) / (1000 * 60 * 60)
+    
+    // Se já passou o tempo médio, aumentar probabilidade
+    if (timeSinceLastCycle >= avgInterval * 0.8) {
+      return Math.min(90, 50 + (timeSinceLastCycle / avgInterval) * 30)
+    }
+    
+    return 30
+  }
+
+  private findBestTimeSlot(cycles: CycleData[]): { time: string; day: string; hour: number } {
+    const hourStats: { [hour: number]: { count: number; avgWins: number } } = {}
+    
+    cycles.forEach(cycle => {
+      if (!hourStats[cycle.hour]) {
+        hourStats[cycle.hour] = { count: 0, avgWins: 0 }
+      }
+      hourStats[cycle.hour].count++
+      hourStats[cycle.hour].avgWins += cycle.consecutiveWins
+    })
+    
+    // Calcular média de wins por hora
+    Object.keys(hourStats).forEach(hour => {
+      const h = parseInt(hour)
+      hourStats[h].avgWins = hourStats[h].avgWins / hourStats[h].count
+    })
+    
+    // Encontrar melhor hora
+    let bestHour = 0
+    let bestScore = 0
+    
+    Object.entries(hourStats).forEach(([hour, stats]) => {
+      const score = stats.count * stats.avgWins
+      if (score > bestScore) {
+        bestScore = score
+        bestHour = parseInt(hour)
+      }
+    })
+    
+    // Encontrar melhor dia
+    const dayStats: { [day: string]: number } = {}
+    cycles.forEach(cycle => {
+      dayStats[cycle.day] = (dayStats[cycle.day] || 0) + cycle.consecutiveWins
+    })
+    
+    const bestDay = Object.entries(dayStats).reduce((a, b) => dayStats[a[0]] > dayStats[b[0]] ? a : b)[0]
+    
+    return {
+      time: `${bestHour.toString().padStart(2, '0')}:00`,
+      day: bestDay,
+      hour: bestHour
+    }
+  }
+
+  private calculateTimeToNextWave(cycles: CycleData[], currentTime: Date): string {
+    if (cycles.length < 2) return 'Dados insuficientes'
+    
+    const intervals: number[] = []
+    for (let i = 1; i < cycles.length; i++) {
+      const prevEnd = new Date(cycles[i-1].endTime)
+      const currStart = new Date(cycles[i].startTime)
+      const interval = (currStart.getTime() - prevEnd.getTime()) / (1000 * 60) // minutos
+      intervals.push(interval)
+    }
+    
+    const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length
+    const lastCycleEnd = new Date(cycles[cycles.length - 1].endTime)
+    const timeSinceLastCycle = (currentTime.getTime() - lastCycleEnd.getTime()) / (1000 * 60)
+    
+    const remainingTime = Math.max(0, avgInterval - timeSinceLastCycle)
+    
+    if (remainingTime < 60) {
+      return `${Math.round(remainingTime)} min`
+    } else if (remainingTime < 1440) {
+      return `${Math.round(remainingTime / 60)}h`
+    } else {
+      return `${Math.round(remainingTime / 1440)} dias`
+    }
+  }
+
+  private calculatePatternMatch(cycles: CycleData[], currentTime: Date): number {
+    if (cycles.length < 3) return 50
+    
+    // Analisar padrões de sequência
+    const recentCycles = cycles.slice(-5) // Últimos 5 ciclos
+    const currentHour = currentTime.getHours()
+    const currentDay = currentTime.toLocaleDateString('pt-BR', { weekday: 'long' })
+    
+    let matchScore = 0
+    
+    // Verificar se hora atual coincide com padrões históricos
+    const hourMatches = recentCycles.filter(cycle => cycle.hour === currentHour).length
+    matchScore += (hourMatches / recentCycles.length) * 40
+    
+    // Verificar se dia atual coincide com padrões históricos
+    const dayMatches = recentCycles.filter(cycle => cycle.day === currentDay).length
+    matchScore += (dayMatches / recentCycles.length) * 30
+    
+    // Verificar padrão de duração de ciclos
+    const avgDuration = recentCycles.reduce((sum, cycle) => sum + cycle.duration, 0) / recentCycles.length
+    const currentStreak = this.calculateCurrentStreak()
+    if (currentStreak > 0) {
+      const streakProgress = Math.min(1, currentStreak / avgDuration)
+      matchScore += streakProgress * 30
+    }
+    
+    return Math.min(100, Math.round(matchScore))
+  }
+
+  private calculateCurrentStreak(): number {
+    // Implementar cálculo de streak atual baseado nos dados mais recentes
+    // Por simplicidade, retornar 0 por enquanto
+    return 0
+  }
+
+  private calculateRiskLevel(upcomingWaves: WavePrediction[]): 'BAIXO' | 'MÉDIO' | 'ALTO' {
+    if (upcomingWaves.length === 0) return 'ALTO'
+    
+    const highConfidenceWaves = upcomingWaves.filter(wave => wave.confidenceLevel === 'MUITO_ALTA' || wave.confidenceLevel === 'ALTA')
+    const lowRiskWaves = upcomingWaves.filter(wave => wave.riskLevel === 'BAIXO')
+    
+    if (highConfidenceWaves.length >= 2 && lowRiskWaves.length >= 1) return 'BAIXO'
+    if (highConfidenceWaves.length >= 1 || lowRiskWaves.length >= 1) return 'MÉDIO'
+    return 'ALTO'
+  }
+
+  private generateRiskAssessment(riskLevel: 'BAIXO' | 'MÉDIO' | 'ALTO', waveCount: number): string {
+    switch (riskLevel) {
+      case 'BAIXO':
+        return `🟢 RISCO BAIXO - ${waveCount} oportunidades identificadas com alta confiança. Condições ideais para multiplicar capital.`
+      case 'MÉDIO':
+        return `🟡 RISCO MÉDIO - ${waveCount} oportunidades disponíveis. Monitore padrões antes de apostar.`
+      case 'ALTO':
+        return `🔴 RISCO ALTO - Poucas oportunidades claras. Aguarde melhores condições.`
+      default:
+        return 'Aguardando análise...'
+    }
   }
 }

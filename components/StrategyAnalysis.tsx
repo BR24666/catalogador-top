@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { StrategyAnalyzer, StrategyResult } from '../lib/strategy-analyzer'
+import { StrategyAnalyzer, StrategyResult, WaveAnalysis, WavePrediction } from '../lib/strategy-analyzer'
 
 const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
@@ -15,8 +15,10 @@ interface StrategyAnalysisProps {
 
 export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: StrategyAnalysisProps) {
   const [strategies, setStrategies] = useState<StrategyResult[]>([])
+  const [waveAnalysis, setWaveAnalysis] = useState<WaveAnalysis | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyResult | null>(null)
+  const [showWaveAnalysis, setShowWaveAnalysis] = useState(false)
 
   const loadAndAnalyze = async () => {
     try {
@@ -39,8 +41,12 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
       if (data && data.length > 0) {
         const analyzer = new StrategyAnalyzer(data)
         const results = analyzer.getStrategyResults()
+        const waves = analyzer.analyzeWaves()
+        
         setStrategies(results)
+        setWaveAnalysis(waves)
         console.log(`📊 Análise concluída: ${results.length} estratégias analisadas`)
+        console.log(`🌊 Análise de ondas: ${waves.upcomingWaves.length} oportunidades identificadas`)
       }
       
     } catch (error) {
@@ -89,6 +95,157 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
     )
   }
 
+  const renderWaveAnalysis = () => {
+    if (!waveAnalysis) return null
+
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'ONDA_ATIVA': return '#22c55e'
+        case 'PREPARANDO': return '#fbbf24'
+        case 'AGUARDANDO': return '#6b7280'
+        default: return '#ef4444'
+      }
+    }
+
+    const getConfidenceColor = (level: string) => {
+      switch (level) {
+        case 'MUITO_ALTA': return '#22c55e'
+        case 'ALTA': return '#60a5fa'
+        case 'MÉDIA': return '#fbbf24'
+        default: return '#ef4444'
+      }
+    }
+
+    const getRiskColor = (level: string) => {
+      switch (level) {
+        case 'BAIXO': return '#22c55e'
+        case 'MÉDIO': return '#fbbf24'
+        default: return '#ef4444'
+      }
+    }
+
+    return React.createElement('div', null,
+      // Status atual
+      React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '20px', borderRadius: '12px', marginBottom: '24px' } },
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', marginBottom: '16px' } },
+          React.createElement('div', { 
+            style: { 
+              width: '12px', 
+              height: '12px', 
+              borderRadius: '50%', 
+              backgroundColor: getStatusColor(waveAnalysis.currentStatus),
+              marginRight: '12px'
+            } 
+          }),
+          React.createElement('h3', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: 'white' } }, 
+            `Status: ${waveAnalysis.currentStatus.replace('_', ' ')}`
+          )
+        ),
+        React.createElement('p', { style: { color: '#9ca3af', marginBottom: '16px' } }, waveAnalysis.riskAssessment),
+        
+        // Estatísticas gerais
+        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' } },
+          React.createElement('div', { style: { textAlign: 'center' } },
+            React.createElement('div', { style: { fontSize: '2rem', fontWeight: 'bold', color: '#22c55e' } }, waveAnalysis.activeWaves.length.toString()),
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem' } }, 'Ondas Ativas')
+          ),
+          React.createElement('div', { style: { textAlign: 'center' } },
+            React.createElement('div', { style: { fontSize: '2rem', fontWeight: 'bold', color: '#60a5fa' } }, waveAnalysis.upcomingWaves.length.toString()),
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem' } }, 'Oportunidades')
+          ),
+          React.createElement('div', { style: { textAlign: 'center' } },
+            React.createElement('div', { style: { fontSize: '2rem', fontWeight: 'bold', color: '#fbbf24' } }, `${waveAnalysis.totalExpectedReturn.toFixed(1)}x`),
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem' } }, 'Retorno Esperado')
+          )
+        )
+      ),
+
+      // Melhor oportunidade
+      waveAnalysis.bestOpportunity && React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '20px', borderRadius: '12px', marginBottom: '24px', border: '2px solid #22c55e' } },
+        React.createElement('h3', { style: { fontSize: '1.25rem', fontWeight: 'bold', color: 'white', marginBottom: '16px' } }, '🏆 MELHOR OPORTUNIDADE'),
+        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' } },
+          React.createElement('div', null,
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Estratégia:'),
+            React.createElement('div', { style: { color: 'white', fontWeight: 'bold' } }, waveAnalysis.bestOpportunity.strategyName)
+          ),
+          React.createElement('div', null,
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Probabilidade:'),
+            React.createElement('div', { style: { color: getConfidenceColor(waveAnalysis.bestOpportunity.confidenceLevel), fontWeight: 'bold' } }, `${waveAnalysis.bestOpportunity.nextWaveProbability}%`)
+          ),
+          React.createElement('div', null,
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Wins Esperados:'),
+            React.createElement('div', { style: { color: '#22c55e', fontWeight: 'bold' } }, `${waveAnalysis.bestOpportunity.expectedMinWins} wins`)
+          ),
+          React.createElement('div', null,
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Multiplicador:'),
+            React.createElement('div', { style: { color: '#fbbf24', fontWeight: 'bold' } }, `${waveAnalysis.bestOpportunity.capitalMultiplier}x`)
+          ),
+          React.createElement('div', null,
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Melhor Horário:'),
+            React.createElement('div', { style: { color: '#60a5fa', fontWeight: 'bold' } }, `${waveAnalysis.bestOpportunity.bestDay} às ${waveAnalysis.bestOpportunity.bestEntryTime}`)
+          ),
+          React.createElement('div', null,
+            React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.875rem', marginBottom: '4px' } }, 'Tempo Restante:'),
+            React.createElement('div', { style: { color: '#ef4444', fontWeight: 'bold' } }, waveAnalysis.bestOpportunity.timeToNextWave)
+          )
+        )
+      ),
+
+      // Todas as oportunidades
+      React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px' } },
+        ...waveAnalysis.upcomingWaves.map((wave, index) =>
+          React.createElement('div', {
+            key: wave.strategyId,
+            style: {
+              backgroundColor: '#1f2937',
+              padding: '20px',
+              borderRadius: '12px',
+              border: index === 0 ? '2px solid #22c55e' : '2px solid transparent'
+            }
+          },
+            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' } },
+              React.createElement('h4', { style: { fontSize: '1.125rem', fontWeight: 'bold', color: 'white' } }, wave.strategyName),
+              React.createElement('div', { 
+                style: { 
+                  padding: '4px 12px', 
+                  borderRadius: '20px', 
+                  backgroundColor: getConfidenceColor(wave.confidenceLevel),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold'
+                } 
+              }, wave.confidenceLevel.replace('_', ' '))
+            ),
+            
+            React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' } },
+              React.createElement('div', null,
+                React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem', marginBottom: '4px' } }, 'Probabilidade:'),
+                React.createElement('div', { style: { color: 'white', fontWeight: 'bold' } }, `${wave.nextWaveProbability}%`)
+              ),
+              React.createElement('div', null,
+                React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem', marginBottom: '4px' } }, 'Wins Mínimos:'),
+                React.createElement('div', { style: { color: '#22c55e', fontWeight: 'bold' } }, `${wave.expectedMinWins}`)
+              ),
+              React.createElement('div', null,
+                React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem', marginBottom: '4px' } }, 'Multiplicador:'),
+                React.createElement('div', { style: { color: '#fbbf24', fontWeight: 'bold' } }, `${wave.capitalMultiplier}x`)
+              ),
+              React.createElement('div', null,
+                React.createElement('div', { style: { color: '#9ca3af', fontSize: '0.75rem', marginBottom: '4px' } }, 'Risco:'),
+                React.createElement('div', { style: { color: getRiskColor(wave.riskLevel), fontWeight: 'bold' } }, wave.riskLevel)
+              )
+            ),
+            
+            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' } },
+              React.createElement('span', { style: { color: '#9ca3af' } }, `Melhor: ${wave.bestDay} ${wave.bestEntryTime}`),
+              React.createElement('span', { style: { color: '#60a5fa' } }, `Em: ${wave.timeToNextWave}`)
+            )
+          )
+        )
+      )
+    )
+  }
+
   if (loading) {
     return React.createElement('div', { style: { textAlign: 'center', padding: '32px 0' } },
       React.createElement('div', { style: { animation: 'spin 1s linear infinite', borderRadius: '9999px', height: '48px', width: '48px', borderBottom: '2px solid #60a5fa', margin: '0 auto' } }),
@@ -99,8 +256,31 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
   return React.createElement('div', { style: { padding: '24px' } },
     // Header
     React.createElement('div', { style: { marginBottom: '32px' } },
-      React.createElement('h2', { style: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '8px', color: 'white' } }, 'Análise de Estratégias Probabilísticas'),
-      React.createElement('p', { style: { color: '#9ca3af', marginBottom: '16px' } }, `Análise para ${selectedDate} - ${selectedTimeframe}`),
+      React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' } },
+        React.createElement('div', null,
+          React.createElement('h2', { style: { fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '8px', color: 'white' } }, 'Análise de Estratégias Probabilísticas'),
+          React.createElement('p', { style: { color: '#9ca3af' } }, `Análise para ${selectedDate} - ${selectedTimeframe}`)
+        ),
+        React.createElement('button', {
+          onClick: () => setShowWaveAnalysis(!showWaveAnalysis),
+          style: {
+            padding: '12px 24px',
+            backgroundColor: showWaveAnalysis ? '#ef4444' : '#22c55e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }
+        },
+          React.createElement('span', null, showWaveAnalysis ? '📊' : '🌊'),
+          React.createElement('span', null, showWaveAnalysis ? 'Ver Estratégias' : 'Surf de Ondas')
+        )
+      ),
       React.createElement('div', { style: { display: 'flex', gap: '16px', flexWrap: 'wrap' } },
         React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '12px 16px', borderRadius: '8px' } },
           React.createElement('span', { style: { color: '#9ca3af', fontSize: '0.875rem' } }, 'Total de Estratégias: '),
@@ -113,6 +293,8 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
       )
     ),
 
+    // Conteúdo baseado na visualização ativa
+    showWaveAnalysis && waveAnalysis ? renderWaveAnalysis() :
     // Estratégias Grid
     React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' } },
       ...strategies.map(strategy => 
