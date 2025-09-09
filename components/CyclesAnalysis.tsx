@@ -41,7 +41,7 @@ export default function CyclesAnalysis({ selectedDate, selectedTimeframe }: Cycl
         .select('*')
         .eq('timeframe', selectedTimeframe)
         .eq('pair', 'SOLUSDT')
-        .order('accuracy', { ascending: false })
+        .order('accuracy_percentage', { ascending: false })
 
       if (cyclesError) {
         console.error('❌ Erro ao carregar ciclos:', cyclesError)
