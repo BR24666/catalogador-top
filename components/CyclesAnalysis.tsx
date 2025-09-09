@@ -78,7 +78,7 @@ export default function CyclesAnalysis({ selectedDate, selectedTimeframe }: Cycl
     ? cycles 
     : cycles.filter(cycle => cycle.strategy_name === selectedStrategy)
 
-  const strategies = [...new Set(cycles.map(cycle => cycle.strategy_name))]
+  const strategies = Array.from(new Set(cycles.map(cycle => cycle.strategy_name)))
 
   return React.createElement('div', { style: { padding: '24px' } },
     // Cabeçalho
