@@ -2,16 +2,19 @@
   "name": "catalogador-probabilistico",
   "version": "1.0.0",
   "description": "Sistema de análise probabilística de velas para identificação de ciclos de acertividade",
+  "private": true,
   "main": "index.js",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "collect-historical": "node historical-data-collector.js",
     "start-realtime": "node realtime-data-updater.js",
     "install-deps": "npm install",
     "setup": "npm run install-deps && npm run collect-historical",
-    "dev": "npm run start-realtime",
     "test": "node test-analysis.js",
-    "quick-start": "node quick-start.js",
-    "start": "npm run quick-start"
+    "quick-start": "node quick-start.js"
   },
   "keywords": [
     "trading",
@@ -25,12 +28,28 @@
   "author": "BR24666",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0",
-    "axios": "^1.6.0",
+    "@supabase/supabase-js": "^2.57.2",
+    "axios": "^1.6.2",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.294.0",
+    "next": "14.0.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "tailwind-merge": "^2.0.0",
     "ws": "^8.14.0",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.4",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5",
     "nodemon": "^3.0.0"
   },
   "engines": {

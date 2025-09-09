@@ -1,0 +1,14 @@
+{
+  "name": "collect-historical-data",
+  "version": "1.0.0",
+  "description": "Script para coletar dados históricos de mais 2 meses",
+  "main": "collect-historical-data.js",
+  "scripts": {
+    "start": "node collect-historical-data.js",
+    "collect": "node collect-historical-data.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.2"
+  },
+  "type": "module"
+}
