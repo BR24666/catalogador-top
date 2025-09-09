@@ -1,0 +1,14 @@
+node_modules
+.git
+.env
+.env.local
+.env.production.local
+.env.development.local
+src/
+test-system.js
+setup-database.sql
+README.md
+DEPLOY-INSTRUCTIONS.md
+VERCEL-DEPLOY-FIX.md
+VERCEL-DEPLOY-GUIDE.md
+HISTORICAL-DATA-COLLECTION.md
