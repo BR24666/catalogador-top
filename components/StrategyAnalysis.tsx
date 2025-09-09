@@ -23,19 +23,29 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null)
 
-  const loadAndAnalyze = async (useRealtimeData = false) => {
+  const loadAndAnalyze = async (useRealtimeData = true) => {
     try {
       setLoading(true)
       const dataSource = useRealtimeData ? 'realtime_candle_data' : 'historical_candle_data'
       console.log(`🔍 Analisando estratégias para ${selectedDate} - ${selectedTimeframe} (${dataSource})`)
       
-      const { data, error } = await supabase
+      // Para tempo real, buscar apenas últimas 2 horas
+      let query = supabase
         .from(dataSource)
         .select('*')
-        .eq('full_date', selectedDate)
         .eq('timeframe', selectedTimeframe)
         .eq('pair', 'SOLUSDT')
         .order('timestamp', { ascending: true })
+
+      if (useRealtimeData) {
+        const twoHoursAgo = new Date()
+        twoHoursAgo.setHours(twoHoursAgo.getHours() - 2)
+        query = query.gte('timestamp', twoHoursAgo.toISOString())
+      } else {
+        query = query.eq('full_date', selectedDate)
+      }
+      
+      const { data, error } = await query
       
       if (error) {
         console.error('❌ Erro ao carregar dados:', error)

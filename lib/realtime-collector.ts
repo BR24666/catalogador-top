@@ -115,12 +115,17 @@ export class RealtimeCollector {
     try {
       console.log(`🔍 Buscando dados do Supabase (realtime): ${pair} ${timeframe} ${date}`)
       
+      // Buscar apenas dados das últimas 2 horas para evitar velas antigas
+      const twoHoursAgo = new Date()
+      twoHoursAgo.setHours(twoHoursAgo.getHours() - 2)
+      
       const { data, error } = await supabase
         .from('realtime_candle_data')
         .select('*')
         .eq('full_date', date)
         .eq('timeframe', timeframe)
         .eq('pair', pair)
+        .gte('timestamp', twoHoursAgo.toISOString())
         .order('timestamp', { ascending: true })
 
       if (error) {
@@ -128,7 +133,7 @@ export class RealtimeCollector {
         return []
       }
 
-      console.log(`📊 Encontrados ${data?.length || 0} candles no Supabase (realtime)`)
+      console.log(`📊 Encontrados ${data?.length || 0} candles no Supabase (realtime) - últimas 2h`)
       return data || []
     } catch (error) {
       console.error('❌ Erro ao buscar dados do Supabase:', error)
