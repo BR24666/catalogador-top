@@ -6,6 +6,9 @@ import { realtimeCollector } from '../lib/realtime-collector'
 import { CandleData } from '../lib/binance-api'
 import StrategyAnalysis from '../components/StrategyAnalysis'
 import CyclesAnalysis from '../components/CyclesAnalysis'
+import RealTimeStrategyAnalysis from '../components/RealTimeStrategyAnalysis'
+import HistoricalCrossAnalysis from '../components/HistoricalCrossAnalysis'
+import PredictiveSystem from '../components/PredictiveSystem'
 
 const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
@@ -13,7 +16,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'realtime' | 'historical' | 'analysis' | 'cycles'>('realtime')
+  const [activeTab, setActiveTab] = useState<'realtime' | 'historical' | 'analysis' | 'cycles' | 'realtime_analysis' | 'historical_cross' | 'predictive'>('realtime')
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState('2025-09-05')
@@ -280,7 +283,64 @@ export default function Home() {
             }
           },
             React.createElement('span', null, '🔄'),
-            React.createElement('span', null, 'Análise de Ciclos Históricos')
+            React.createElement('span', null, 'Ciclos Históricos')
+          ),
+          React.createElement('button', {
+            onClick: () => setActiveTab('realtime_analysis'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'realtime_analysis' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '⚡'),
+            React.createElement('span', null, 'Estratégias Tempo Real')
+          ),
+          React.createElement('button', {
+            onClick: () => setActiveTab('historical_cross'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'historical_cross' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '🔍'),
+            React.createElement('span', null, 'Análise Cruzada')
+          ),
+          React.createElement('button', {
+            onClick: () => setActiveTab('predictive'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'predictive' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '🔮'),
+            React.createElement('span', null, 'Sistema Preditivo')
           )
         ),
         
@@ -379,6 +439,12 @@ export default function Home() {
         React.createElement(StrategyAnalysis, { selectedDate, selectedTimeframe }) :
       activeTab === 'cycles' ? 
         React.createElement(CyclesAnalysis, { selectedDate, selectedTimeframe }) :
+      activeTab === 'realtime_analysis' ? 
+        React.createElement(RealTimeStrategyAnalysis, { selectedDate, selectedTimeframe }) :
+      activeTab === 'historical_cross' ? 
+        React.createElement(HistoricalCrossAnalysis, { selectedDate, selectedTimeframe }) :
+      activeTab === 'predictive' ? 
+        React.createElement(PredictiveSystem, { selectedDate, selectedTimeframe }) :
         React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' } },
         React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
           React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' } }, stats.total),
