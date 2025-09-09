@@ -1,0 +1,39 @@
+{
+  "name": "catalogador-probabilistico",
+  "version": "1.0.0",
+  "description": "Sistema de análise probabilística de velas para identificação de ciclos de acertividade",
+  "main": "index.js",
+  "scripts": {
+    "collect-historical": "node historical-data-collector.js",
+    "start-realtime": "node realtime-data-updater.js",
+    "install-deps": "npm install",
+    "setup": "npm run install-deps && npm run collect-historical",
+    "dev": "npm run start-realtime",
+    "test": "node test-analysis.js",
+    "quick-start": "node quick-start.js",
+    "start": "npm run quick-start"
+  },
+  "keywords": [
+    "trading",
+    "probabilistic-analysis",
+    "candlestick-patterns",
+    "cryptocurrency",
+    "forex",
+    "binance",
+    "supabase"
+  ],
+  "author": "BR24666",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "axios": "^1.6.0",
+    "ws": "^8.14.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
