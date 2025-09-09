@@ -21,14 +21,15 @@ class CandleData {
     this.close_price = parseFloat(close)
     this.color = this.open_price <= this.close_price ? 'GREEN' : 'RED'
     
-    // Processar timestamp para componentes de data
+    // Processar timestamp para componentes de data (horário do Brasil UTC-3)
     const date = new Date(timestamp)
-    this.hour = date.getUTCHours()
-    this.minute = date.getUTCMinutes()
-    this.day = date.getUTCDate()
-    this.month = date.getUTCMonth() + 1
-    this.year = date.getUTCFullYear()
-    this.full_date = date.toISOString().split('T')[0]
+    const brazilTime = new Date(date.getTime() - (3 * 60 * 60 * 1000))
+    this.hour = brazilTime.getUTCHours()
+    this.minute = brazilTime.getUTCMinutes()
+    this.day = brazilTime.getUTCDate()
+    this.month = brazilTime.getUTCMonth() + 1
+    this.year = brazilTime.getUTCFullYear()
+    this.full_date = brazilTime.toISOString().split('T')[0]
     this.time_key = `${this.hour.toString().padStart(2, '0')}:${this.minute.toString().padStart(2, '0')}`
     this.date_key = `${this.year}-${this.month.toString().padStart(2, '0')}-${this.day.toString().padStart(2, '0')}`
   }

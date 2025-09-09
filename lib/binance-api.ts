@@ -93,16 +93,18 @@ export class BinanceAPI {
         return null
       }
       
-      // Usar UTC diretamente (a Binance já retorna em UTC)
+      // Converter para horário do Brasil (UTC-3)
+      const brazilTime = new Date(timestamp.getTime() - (3 * 60 * 60 * 1000))
+      
       const openPrice = parseFloat(open)
       const closePrice = parseFloat(close)
       const color = closePrice >= openPrice ? 'GREEN' : 'RED'
       
-      const hour = timestamp.getUTCHours()
-      const minute = timestamp.getUTCMinutes()
-      const day = timestamp.getUTCDate()
-      const month = timestamp.getUTCMonth() + 1
-      const year = timestamp.getUTCFullYear()
+      const hour = brazilTime.getUTCHours()
+      const minute = brazilTime.getUTCMinutes()
+      const day = brazilTime.getUTCDate()
+      const month = brazilTime.getUTCMonth() + 1
+      const year = brazilTime.getUTCFullYear()
       
       const fullDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
       const timeKey = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`

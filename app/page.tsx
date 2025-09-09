@@ -397,7 +397,7 @@ export default function Home() {
                 React.createElement('div', { 
                   key: i, 
                   style: { 
-                    width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px', 
+                    width: selectedTimeframe === '1m' ? '12px' : selectedTimeframe === '5m' ? '16px' : '20px', 
                     height: '24px', 
                     fontSize: '0.6rem', 
                     color: '#9ca3af', 
@@ -422,8 +422,8 @@ export default function Home() {
                   React.createElement('div', {
                     key: `${hourIndex}-${minuteIndex}`,
                     style: {
-                      width: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '12px' : '16px',
-                      height: selectedTimeframe === '1m' ? '8px' : selectedTimeframe === '5m' ? '10px' : '12px',
+                      width: selectedTimeframe === '1m' ? '12px' : selectedTimeframe === '5m' ? '16px' : '20px',
+                      height: selectedTimeframe === '1m' ? '12px' : selectedTimeframe === '5m' ? '14px' : '16px',
                       margin: selectedTimeframe === '1m' ? '0 1px' : '0 1px',
                       borderRadius: '2px',
                       backgroundColor: candle 

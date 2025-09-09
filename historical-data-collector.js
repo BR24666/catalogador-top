@@ -148,21 +148,27 @@ class HistoricalDataCollector {
                 }
             });
 
-            return response.data.map(candle => ({
-                timestamp: new Date(candle[0]).toISOString(),
-                open_price: parseFloat(candle[1]),
-                high_price: parseFloat(candle[2]),
-                low_price: parseFloat(candle[3]),
-                close_price: parseFloat(candle[4]),
-                volume: parseFloat(candle[5]),
-                color: parseFloat(candle[4]) > parseFloat(candle[1]) ? 'GREEN' : 'RED',
-                hour: new Date(candle[0]).getHours(),
-                minute: new Date(candle[0]).getMinutes(),
-                day_of_week: new Date(candle[0]).getDay(),
-                day_of_month: new Date(candle[0]).getDate(),
-                month: new Date(candle[0]).getMonth() + 1,
-                year: new Date(candle[0]).getFullYear()
-            }));
+            return response.data.map(candle => {
+                // Converter para horário do Brasil (UTC-3)
+                const timestamp = new Date(candle[0])
+                const brazilTime = new Date(timestamp.getTime() - (3 * 60 * 60 * 1000))
+                
+                return {
+                    timestamp: brazilTime.toISOString(),
+                    open_price: parseFloat(candle[1]),
+                    high_price: parseFloat(candle[2]),
+                    low_price: parseFloat(candle[3]),
+                    close_price: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5]),
+                    color: parseFloat(candle[4]) > parseFloat(candle[1]) ? 'GREEN' : 'RED',
+                    hour: brazilTime.getUTCHours(),
+                    minute: brazilTime.getUTCMinutes(),
+                    day_of_week: brazilTime.getUTCDay(),
+                    day_of_month: brazilTime.getUTCDate(),
+                    month: brazilTime.getUTCMonth() + 1,
+                    year: brazilTime.getUTCFullYear()
+                }
+            });
 
         } catch (error) {
             console.error(`❌ Erro ao buscar dados da API: ${error.message}`);
