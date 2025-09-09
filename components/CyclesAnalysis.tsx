@@ -240,7 +240,7 @@ export default function CyclesAnalysis({ selectedDate, selectedTimeframe }: Cycl
                 padding: '20px', 
                 borderRadius: '12px',
                 border: '1px solid #374151',
-                borderLeft: `4px solid ${cycle.accuracy >= 80 ? '#4ade80' : cycle.accuracy >= 60 ? '#f59e0b' : '#ef4444'}`
+                borderLeft: `4px solid ${cycle.accuracy_percentage >= 80 ? '#4ade80' : cycle.accuracy_percentage >= 60 ? '#f59e0b' : '#ef4444'}`
               } 
             },
               React.createElement('div', { 
