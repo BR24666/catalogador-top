@@ -124,27 +124,66 @@ export default function RealTimeStrategyAnalysis({ selectedDate, selectedTimefra
     return Math.floor(totalMinutes / 15) + 1 // Quadrantes de 15 minutos
   }
 
-  // Analisar estratégias em tempo real
-  const analyzeStrategies = (candles: CandleData[]) => {
+  // Analisar estratégias em tempo real com dados REAIS
+  const analyzeStrategies = async (candles: CandleData[]) => {
     const results: StrategyResult[] = []
     const quadrantMap = new Map<number, { total: number, correct: number }>()
 
-    strategies.forEach(strategy => {
+    for (const strategy of strategies) {
       const signal = strategy.analyze(candles)
       if (signal) {
         const currentCandle = candles[candles.length - 1]
         const quadrant = getQuadrant(currentCandle.hour, currentCandle.minute)
         
-        // Simular acertividade baseada em dados históricos
-        const baseAccuracy = Math.random() * 40 + 50 // 50-90%
-        const totalSignals = Math.floor(Math.random() * 20) + 10
-        const correctSignals = Math.floor(totalSignals * baseAccuracy / 100)
+        // Buscar dados REAIS de acertividade da estratégia
+        const { data: strategyData, error } = await supabase
+          .from('accuracy_cycles')
+          .select('*')
+          .eq('strategy_name', strategy.name)
+          .eq('pair', 'SOLUSDT')
+          .eq('timeframe', selectedTimeframe)
+          .order('created_at', { ascending: false })
+          .limit(10)
+
+        if (error) {
+          console.error(`❌ Erro ao buscar dados da estratégia ${strategy.name}:`, error)
+          continue
+        }
+
+        // Calcular acertividade REAL baseada nos dados históricos
+        let totalSignals = 0
+        let correctSignals = 0
+        let realAccuracy = 0
+
+        if (strategyData && strategyData.length > 0) {
+          totalSignals = strategyData.reduce((sum, cycle) => sum + cycle.total_signals, 0)
+          correctSignals = strategyData.reduce((sum, cycle) => sum + cycle.correct_signals, 0)
+          realAccuracy = totalSignals > 0 ? (correctSignals / totalSignals) * 100 : 0
+        }
+
+        // Buscar dados específicos do quadrante atual
+        const { data: quadrantData } = await supabase
+          .from('accuracy_cycles')
+          .select('*')
+          .eq('strategy_name', strategy.name)
+          .eq('pair', 'SOLUSDT')
+          .eq('timeframe', selectedTimeframe)
+          .eq('start_hour', currentCandle.hour)
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        let quadrantAccuracy = realAccuracy
+        if (quadrantData && quadrantData.length > 0) {
+          const quadrantTotal = quadrantData.reduce((sum, cycle) => sum + cycle.total_signals, 0)
+          const quadrantCorrect = quadrantData.reduce((sum, cycle) => sum + cycle.correct_signals, 0)
+          quadrantAccuracy = quadrantTotal > 0 ? (quadrantCorrect / quadrantTotal) * 100 : realAccuracy
+        }
         
         results.push({
           strategy_name: strategy.name,
           signal,
-          confidence: baseAccuracy,
-          accuracy: baseAccuracy,
+          confidence: quadrantAccuracy,
+          accuracy: realAccuracy,
           total_signals: totalSignals,
           correct_signals: correctSignals,
           quadrant,
@@ -159,7 +198,7 @@ export default function RealTimeStrategyAnalysis({ selectedDate, selectedTimefra
         stats.total += totalSignals
         stats.correct += correctSignals
       }
-    })
+    }
 
     // Calcular estatísticas por quadrante
     const quadrantStats: QuadrantStats[] = []
@@ -221,7 +260,7 @@ export default function RealTimeStrategyAnalysis({ selectedDate, selectedTimefra
       }))
 
       setCandles(candlesData)
-      analyzeStrategies(candlesData)
+      await analyzeStrategies(candlesData)
       
       console.log(`✅ ${candlesData.length} candles carregados`)
 
