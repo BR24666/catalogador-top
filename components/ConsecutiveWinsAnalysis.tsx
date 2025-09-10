@@ -622,7 +622,7 @@ export default function ConsecutiveWinsAnalysis({ selectedDate, selectedTimefram
       }, 'Filtrar por Estratégia:'),
       React.createElement('select', {
         value: selectedStrategy,
-        onChange: (e) => setSelectedStrategy(e.target.value),
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedStrategy(e.target.value),
         style: {
           width: '100%',
           padding: '10px',
