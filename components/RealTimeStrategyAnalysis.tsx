@@ -19,7 +19,7 @@ interface CandleData {
 
 interface StrategyResult {
   strategy_name: string
-  signal: 'CALL' | 'PUT' | 'NEUTRAL'
+  signal: 'CALL' | 'PUT' | null
   confidence: number
   accuracy: number
   total_signals: number
@@ -135,7 +135,7 @@ export default function RealTimeStrategyAnalysis({ selectedDate, selectedTimefra
       const signal = strategy.analyze(candles)
       console.log(`📊 Sinal da estratégia ${strategy.name}:`, signal)
       
-      if (signal && signal !== 'NEUTRAL') {
+      if (signal) {
         const currentCandle = candles[candles.length - 1]
         const quadrant = getQuadrant(currentCandle.hour, currentCandle.minute)
         console.log(`📍 Quadrante atual: ${quadrant} (${currentCandle.hour}:${currentCandle.minute})`)
