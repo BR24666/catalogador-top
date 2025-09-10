@@ -87,7 +87,7 @@ export default function HistoricalCrossAnalysis({ selectedDate, selectedTimefram
           best_months: [],
           total_occurrences: stats.total,
           correct_predictions: stats.correct,
-          risk_level: stats.total < 10 ? 'HIGH' : stats.total < 50 ? 'MEDIUM' : 'LOW',
+          risk_level: (stats.total < 10 ? 'HIGH' : stats.total < 50 ? 'MEDIUM' : 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH',
           recommendation: stats.total < 10 ? 'Dados insuficientes' : 
                          (stats.correct / stats.total) > 0.7 ? 'Alta confiança' : 
                          (stats.correct / stats.total) > 0.6 ? 'Média confiança' : 'Baixa confiança'
@@ -126,7 +126,7 @@ export default function HistoricalCrossAnalysis({ selectedDate, selectedTimefram
           best_months: [],
           total_occurrences: stats.total,
           correct_predictions: stats.correct,
-          risk_level: stats.total < 10 ? 'HIGH' : stats.total < 50 ? 'MEDIUM' : 'LOW',
+          risk_level: (stats.total < 10 ? 'HIGH' : stats.total < 50 ? 'MEDIUM' : 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH',
           recommendation: stats.total < 10 ? 'Dados insuficientes' : 
                          (stats.correct / stats.total) > 0.7 ? 'Alta confiança' : 
                          (stats.correct / stats.total) > 0.6 ? 'Média confiança' : 'Baixa confiança'
@@ -165,7 +165,7 @@ export default function HistoricalCrossAnalysis({ selectedDate, selectedTimefram
           best_months: [],
           total_occurrences: stats.total,
           correct_predictions: stats.correct,
-          risk_level: stats.total < 10 ? 'HIGH' : stats.total < 50 ? 'MEDIUM' : 'LOW',
+          risk_level: (stats.total < 10 ? 'HIGH' : stats.total < 50 ? 'MEDIUM' : 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH',
           recommendation: stats.total < 10 ? 'Dados insuficientes' : 
                          (stats.correct / stats.total) > 0.7 ? 'Alta confiança' : 
                          (stats.correct / stats.total) > 0.6 ? 'Média confiança' : 'Baixa confiança'
@@ -314,7 +314,7 @@ export default function HistoricalCrossAnalysis({ selectedDate, selectedTimefram
       }, 'Filtrar por Padrão:'),
       React.createElement('select', {
         value: selectedPattern,
-        onChange: (e) => setSelectedPattern(e.target.value),
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPattern(e.target.value),
         style: {
           width: '100%',
           padding: '10px',
