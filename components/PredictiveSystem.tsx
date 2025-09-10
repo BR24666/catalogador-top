@@ -147,7 +147,7 @@ export default function PredictiveSystem({ selectedDate, selectedTimeframe }: Pr
         historical_accuracy: strategy.historical_accuracy,
         real_time_accuracy: strategy.real_time_accuracy,
         combined_score: combinedScore,
-        risk_level: strategy.risk_level,
+        risk_level: strategy.risk_level as 'LOW' | 'MEDIUM' | 'HIGH',
         time_window: `${currentHour.toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
         expected_duration: Math.floor(Math.random() * 30) + 15, // 15-45 minutos
         stop_loss: stopLoss,
