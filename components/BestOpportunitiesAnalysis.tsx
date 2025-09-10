@@ -352,7 +352,7 @@ export default function BestOpportunitiesAnalysis({ selectedDate, selectedTimefr
         }, 'Filtrar por Estratégia:'),
         React.createElement('select', {
           value: selectedStrategy,
-          onChange: (e) => setSelectedStrategy(e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedStrategy(e.target.value),
           style: {
             width: '100%',
             padding: '10px',
@@ -379,7 +379,7 @@ export default function BestOpportunitiesAnalysis({ selectedDate, selectedTimefr
         }, 'Ordenar por:'),
         React.createElement('select', {
           value: selectedMetric,
-          onChange: (e) => setSelectedMetric(e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedMetric(e.target.value),
           style: {
             width: '100%',
             padding: '10px',
