@@ -10,6 +10,7 @@ import RealTimeStrategyAnalysis from '../components/RealTimeStrategyAnalysis'
 import HistoricalCrossAnalysis from '../components/HistoricalCrossAnalysis'
 import PredictiveSystem from '../components/PredictiveSystem'
 import BestOpportunitiesAnalysis from '../components/BestOpportunitiesAnalysis'
+import ConsecutiveWinsAnalysis from '../components/ConsecutiveWinsAnalysis'
 
 const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
@@ -17,7 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'realtime' | 'historical' | 'analysis' | 'cycles' | 'realtime_analysis' | 'historical_cross' | 'predictive' | 'best_opportunities'>('realtime')
+  const [activeTab, setActiveTab] = useState<'realtime' | 'historical' | 'analysis' | 'cycles' | 'realtime_analysis' | 'historical_cross' | 'predictive' | 'best_opportunities' | 'consecutive_wins'>('realtime')
   const [candles, setCandles] = useState<CandleData[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState('2025-09-05')
@@ -361,6 +362,25 @@ export default function Home() {
           },
             React.createElement('span', null, '🎯'),
             React.createElement('span', null, 'Melhores Oportunidades')
+          ),
+          React.createElement('button', {
+            onClick: () => setActiveTab('consecutive_wins'),
+            style: {
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'consecutive_wins' ? '#3b82f6' : '#374151',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }
+          },
+            React.createElement('span', null, '🔥'),
+            React.createElement('span', null, 'Wins Consecutivos')
           )
         ),
         
@@ -467,6 +487,8 @@ export default function Home() {
         React.createElement(PredictiveSystem, { selectedDate, selectedTimeframe }) :
       activeTab === 'best_opportunities' ? 
         React.createElement(BestOpportunitiesAnalysis, { selectedDate, selectedTimeframe }) :
+      activeTab === 'consecutive_wins' ? 
+        React.createElement(ConsecutiveWinsAnalysis, { selectedDate, selectedTimeframe }) :
         React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' } },
         React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
           React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' } }, stats.total),
