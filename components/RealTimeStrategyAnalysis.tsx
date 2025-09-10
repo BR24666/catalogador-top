@@ -126,14 +126,19 @@ export default function RealTimeStrategyAnalysis({ selectedDate, selectedTimefra
 
   // Analisar estratégias em tempo real com dados REAIS
   const analyzeStrategies = async (candles: CandleData[]) => {
+    console.log(`🔍 Analisando ${candles.length} candles para estratégias em tempo real`)
     const results: StrategyResult[] = []
     const quadrantMap = new Map<number, { total: number, correct: number }>()
 
     for (const strategy of strategies) {
+      console.log(`🎯 Analisando estratégia: ${strategy.name}`)
       const signal = strategy.analyze(candles)
-      if (signal) {
+      console.log(`📊 Sinal da estratégia ${strategy.name}:`, signal)
+      
+      if (signal && signal !== 'NEUTRAL') {
         const currentCandle = candles[candles.length - 1]
         const quadrant = getQuadrant(currentCandle.hour, currentCandle.minute)
+        console.log(`📍 Quadrante atual: ${quadrant} (${currentCandle.hour}:${currentCandle.minute})`)
         
         // Buscar dados REAIS de acertividade da estratégia
         const { data: strategyData, error } = await supabase
@@ -226,6 +231,9 @@ export default function RealTimeStrategyAnalysis({ selectedDate, selectedTimefra
       })
     })
 
+    console.log(`🎯 Total de estratégias com sinal: ${results.length}`)
+    console.log(`📊 Resultados:`, results)
+    
     setStrategyResults(results)
     setQuadrantStats(quadrantStats.sort((a, b) => a.quadrant - b.quadrant))
   }
