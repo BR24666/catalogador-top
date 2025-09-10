@@ -209,8 +209,8 @@ export default function BestOpportunitiesAnalysis({ selectedDate, selectedTimefr
         performanceData.push({
           strategy_name: strategyName,
           total_cycles: totalCycles,
-          total_signals,
-          correct_signals,
+          total_signals: totalSignals,
+          correct_signals: correctSignals,
           accuracy_percentage: accuracy,
           best_hour: bestHour,
           best_day: bestDay,
