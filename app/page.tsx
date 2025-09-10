@@ -1,624 +1,196 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { realtimeCollector } from '../lib/realtime-collector'
 import { CandleData } from '../lib/binance-api'
+import CandleGrid from '../components/CandleGrid'
 import StrategyAnalysis from '../components/StrategyAnalysis'
-import CyclesAnalysis from '../components/CyclesAnalysis'
-import RealTimeStrategyAnalysis from '../components/RealTimeStrategyAnalysis'
-import HistoricalCrossAnalysis from '../components/HistoricalCrossAnalysis'
-import PredictiveSystem from '../components/PredictiveSystem'
-import BestOpportunitiesAnalysis from '../components/BestOpportunitiesAnalysis'
-import ConsecutiveWinsAnalysis from '../components/ConsecutiveWinsAnalysis'
-
-const supabaseUrl = 'https://lgddsslskhzxtpjathjr.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnZGRzc2xza2h6eHRwamF0aGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5OTQ1ODcsImV4cCI6MjA2MDU3MDU4N30._hnImYIRQ_102sY0X_TAWBKS1J71SpXt1Xjr2HvJIws'
-const supabase = createClient(supabaseUrl, supabaseKey)
-
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'realtime' | 'historical' | 'analysis' | 'cycles' | 'realtime_analysis' | 'historical_cross' | 'predictive' | 'best_opportunities' | 'consecutive_wins'>('realtime')
   const [candles, setCandles] = useState<CandleData[]>([])
-  const [loading, setLoading] = useState(false)
-  const [selectedDate, setSelectedDate] = useState('2025-09-05')
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m')
-  const [lastUpdate, setLastUpdate] = useState<string>('')
-  const [stats, setStats] = useState({
-    total: 0,
-    green: 0,
-    red: 0,
-    greenPercent: 0,
-    redPercent: 0
-  })
-  const collectorRef = useRef<typeof realtimeCollector | null>(null)
+  const [activeTab, setActiveTab] = useState<'catalogador' | 'estrategias'>('catalogador')
+  const [isCollecting, setIsCollecting] = useState(false)
+  const collectorRef = useRef<realtimeCollector | null>(null)
 
-  const loadCandles = async () => {
-    try {
-      setLoading(true)
-      console.log(`🔄 Carregando dados: ${selectedDate} - ${selectedTimeframe} - Aba: ${activeTab}`)
-      
-      // Escolher tabela baseada na aba ativa
-      const tableName = activeTab === 'realtime' ? 'realtime_candle_data' : 'historical_candle_data'
-      
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .eq('full_date', selectedDate)
-        .eq('timeframe', selectedTimeframe)
-        .eq('pair', 'SOLUSDT')
-        .order('timestamp', { ascending: true })
-      
-      if (error) {
-        console.error('❌ Erro ao carregar dados:', error)
-        return
-      }
-      
-      console.log(`📊 Dados carregados da tabela ${tableName}: ${data?.length || 0} candles`)
-      setCandles(data || [])
-      updateStats(data || [])
-      
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Inicializar o coletor e iniciar coleta automática apenas na aba tempo real
+  // Inicializar coletor
   useEffect(() => {
-    collectorRef.current = realtimeCollector
-    
-    // Configurar callback para atualizações
-    realtimeCollector.onDataUpdate = (newCandles) => {
-      if (activeTab === 'realtime') {
-        console.log(`🔄 Atualizando grid com ${newCandles.length} candles`)
+    collectorRef.current = new realtimeCollector((newCandles) => {
         setCandles(newCandles)
-        setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
-        updateStats(newCandles)
-      }
-    }
-    
-    // Iniciar coleta automática apenas na aba tempo real
-    if (activeTab === 'realtime') {
-      realtimeCollector.startCollection('SOLUSDT', selectedTimeframe)
-      console.log('🚀 Coleta automática iniciada!')
+    })
+  }, [])
+
+  // Iniciar/parar coleta
+  const toggleCollection = () => {
+    if (isCollecting) {
+      collectorRef.current?.stopCollection('SOLUSDT', selectedTimeframe)
+      setIsCollecting(false)
     } else {
-      realtimeCollector.stopAllCollections()
+      collectorRef.current?.startCollection('SOLUSDT', selectedTimeframe)
+      setIsCollecting(true)
     }
-    
-    return () => {
-      realtimeCollector.stopAllCollections()
+  }
+
+  // Carregar dados existentes
+  const loadExistingData = async () => {
+    try {
+      const data = await collectorRef.current?.getCandlesFromSupabase('SOLUSDT', selectedTimeframe)
+      if (data) {
+        setCandles(data)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error)
     }
-  }, [activeTab])
+  }
 
   useEffect(() => {
-    loadCandles()
-    
-    // Reiniciar coleta apenas na aba tempo real
-    if (activeTab === 'realtime' && collectorRef.current) {
-      collectorRef.current.stopCollection('SOLUSDT', selectedTimeframe)
-      collectorRef.current.startCollection('SOLUSDT', selectedTimeframe)
-      console.log(`🔄 Coleta reiniciada para timeframe: ${selectedTimeframe}`)
-    } else if (activeTab === 'historical') {
-      // Parar coleta na aba histórica
-      if (collectorRef.current) {
-        collectorRef.current.stopAllCollections()
-        console.log('🛑 Coleta parada na aba histórica')
-      }
-    }
-  }, [selectedDate, selectedTimeframe, activeTab])
+    loadExistingData()
+  }, [selectedTimeframe])
 
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#0f172a', 
+      color: 'white',
+      padding: '20px'
+    }}>
+      {/* Cabeçalho */}
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: '32px',
+        borderBottom: '1px solid #334155',
+        paddingBottom: '20px'
+      }}>
+        <h1 style={{ 
+          fontSize: '2.5rem', 
+          fontWeight: 'bold', 
+          marginBottom: '16px',
+          background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}>
+          📊 Catalogador Probabilístico
+        </h1>
+        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+          Análise de velas e estratégias em tempo real
+        </p>
+      </div>
 
-  // Função para atualizar estatísticas
-  const updateStats = (candlesData: CandleData[]) => {
-    const total = candlesData.length
-    const green = candlesData.filter(c => c.color === 'GREEN').length
-    const red = candlesData.filter(c => c.color === 'RED').length
-    
-    setStats({
-      total,
-      green,
-      red,
-      greenPercent: total > 0 ? Math.round((green / total) * 100) : 0,
-      redPercent: total > 0 ? Math.round((red / total) * 100) : 0
-    })
-  }
+      {/* Controles */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: '16px', 
+        marginBottom: '32px',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <label style={{ color: '#e2e8f0' }}>Data:</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #475569',
+              backgroundColor: '#1e293b',
+              color: 'white'
+            }}
+          />
+        </div>
 
-  const createGrid = () => {
-    console.log(`🎯 Criando grid com ${candles.length} candles`)
-    const minuteColumns = getMinuteColumns(selectedTimeframe)
-    const grid = Array(24).fill(null).map(() => Array(minuteColumns).fill(null))
-    
-    candles.forEach(candle => {
-      if (candle.hour >= 0 && candle.hour < 24) {
-        let columnIndex = 0
-        
-        // Mapear minuto para coluna baseado no timeframe
-        switch (selectedTimeframe) {
-          case '1m':
-            columnIndex = candle.minute // 0-59 minutos
-            break
-          case '5m':
-            columnIndex = Math.floor(candle.minute / 5) // 0-11 colunas
-            break
-          case '15m':
-            columnIndex = Math.floor(candle.minute / 15) // 0-3 colunas
-            break
-          default:
-            columnIndex = candle.minute
-        }
-        
-        if (columnIndex >= 0 && columnIndex < minuteColumns) {
-          grid[candle.hour][columnIndex] = candle
-          console.log(`📍 Posicionando vela: ${candle.hour}:${candle.minute} -> coluna ${columnIndex} - ${candle.color}`)
-        }
-      }
-    })
-    
-    return grid
-  }
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <label style={{ color: '#e2e8f0' }}>Timeframe:</label>
+          <select
+            value={selectedTimeframe}
+            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #475569',
+              backgroundColor: '#1e293b',
+              color: 'white'
+            }}
+          >
+            <option value="1m">1 minuto</option>
+            <option value="5m">5 minutos</option>
+            <option value="15m">15 minutos</option>
+          </select>
+        </div>
 
-  // Função para obter o intervalo de minutos baseado no timeframe
-  const getMinuteInterval = (timeframe: string): number => {
-    switch (timeframe) {
-      case '1m': return 10 // Mostrar a cada 10 minutos para melhor legibilidade
-      case '5m': return 5
-      case '15m': return 15
-      default: return 10
-    }
-  }
-
-  // Função para verificar se um minuto deve ser exibido no grid
-  const shouldShowMinute = (minute: number, timeframe: string): boolean => {
-    // Para 1m, mostrar todos os minutos (0-59)
-    // Para 5m e 15m, mostrar apenas os intervalos corretos
-    switch (timeframe) {
-      case '1m': return true // Mostrar todos os 60 minutos
-      case '5m': return minute % 5 === 0 // 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
-      case '15m': return minute % 15 === 0 // 0, 15, 30, 45
-      default: return true
-    }
-  }
-
-  // Função para obter o número de colunas baseado no timeframe
-  const getMinuteColumns = (timeframe: string): number => {
-    switch (timeframe) {
-      case '1m': return 60 // 0 a 59 minutos
-      case '5m': return 12 // 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
-      case '15m': return 4  // 0, 15, 30, 45
-      default: return 60
-    }
-  }
-
-  // Função para obter o minuto real baseado no índice da coluna
-  const getMinuteFromColumn = (columnIndex: number, timeframe: string): number => {
-    switch (timeframe) {
-      case '1m': return columnIndex
-      case '5m': return columnIndex * 5
-      case '15m': return columnIndex * 15
-      default: return columnIndex
-    }
-  }
-
-  const grid = createGrid()
-
-  return React.createElement('div', { style: { minHeight: '100vh', backgroundColor: '#111827', color: 'white', padding: '24px' } },
-    React.createElement('div', { style: { maxWidth: '1280px', margin: '0 auto' } },
-      React.createElement('div', { style: { marginBottom: '32px' } },
-        React.createElement('h1', { style: { fontSize: '2.25rem', fontWeight: 'bold', marginBottom: '16px' } }, 'Catálogo de Velas SOLUSDT'),
-        React.createElement('p', { style: { color: '#9ca3af', marginBottom: '24px' } }, 'Visualização das cores das velas - Hora na linha horizontal, Minuto na coluna vertical'),
-        
-        // Abas
-        React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '24px' } },
-          React.createElement('button', {
-            onClick: () => setActiveTab('realtime'),
-            style: {
-              padding: '12px 24px',
+        <button
+          onClick={toggleCollection}
+          style={{
+            padding: '8px 16px',
               borderRadius: '8px',
               border: 'none',
-              backgroundColor: activeTab === 'realtime' ? '#3b82f6' : '#374151',
+            backgroundColor: isCollecting ? '#ef4444' : '#22c55e',
               color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
+            fontWeight: 'bold',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '📈'),
-            React.createElement('span', null, 'Tempo Real')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('historical'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'historical' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '📊'),
-            React.createElement('span', null, 'Análise Histórica')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('analysis'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'analysis' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '🧠'),
-            React.createElement('span', null, 'Estratégias (Tempo Real)')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('cycles'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'cycles' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '🔄'),
-            React.createElement('span', null, 'Ciclos Históricos')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('realtime_analysis'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'realtime_analysis' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '⚡'),
-            React.createElement('span', null, 'Estratégias Tempo Real')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('historical_cross'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'historical_cross' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '🔍'),
-            React.createElement('span', null, 'Análise Cruzada')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('predictive'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'predictive' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '🔮'),
-            React.createElement('span', null, 'Sistema Preditivo')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('best_opportunities'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'best_opportunities' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '🎯'),
-            React.createElement('span', null, 'Melhores Oportunidades')
-          ),
-          React.createElement('button', {
-            onClick: () => setActiveTab('consecutive_wins'),
-            style: {
-              padding: '12px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'consecutive_wins' ? '#3b82f6' : '#374151',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }
-          },
-            React.createElement('span', null, '🔥'),
-            React.createElement('span', null, 'Wins Consecutivos')
-          )
-        ),
-        
-        // Conteúdo baseado na aba ativa
-        activeTab === 'realtime' ? 
-          // Aba Tempo Real
-          React.createElement('div', null,
-            React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
-              React.createElement('div', null,
-                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
-                React.createElement('select', {
-                  value: selectedTimeframe,
-                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
-                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-                },
-                  React.createElement('option', { value: '1m' }, '1 minuto'),
-                  React.createElement('option', { value: '5m' }, '5 minutos'),
-                  React.createElement('option', { value: '15m' }, '15 minutos')
-                )
-              ),
-              
-              React.createElement('div', { style: { display: 'flex', alignItems: 'center', marginTop: '16px' } },
-                React.createElement('div', { style: { fontSize: '0.75rem', color: '#9ca3af' } },
-                  React.createElement('span', { style: { color: '#10b981' } }, `🟢 Coleta Automática Ativa - Última atualização: ${lastUpdate || 'Carregando...'}`)
-                )
-              )
-            )
-          ) :
-        activeTab === 'historical' ?
-          // Aba Análise Histórica
-          React.createElement('div', null,
-            React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
-              React.createElement('div', null,
-                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Data:'),
-                React.createElement('input', {
-                  type: 'date',
-                  value: selectedDate,
-                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value),
-                  min: '2025-08-06',
-                  max: '2025-09-05',
-                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-                })
-              ),
-              
-              React.createElement('div', null,
-                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
-                React.createElement('select', {
-                  value: selectedTimeframe,
-                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
-                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-                },
-                  React.createElement('option', { value: '1m' }, '1 minuto'),
-                  React.createElement('option', { value: '5m' }, '5 minutos'),
-                  React.createElement('option', { value: '15m' }, '15 minutos')
-                )
-              ),
-              
-              React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Período disponível: 06/08/2025 a 05/09/2025')
-            )
-          ) :
-          // Aba Análise de Estratégias
-          React.createElement('div', null,
-            React.createElement('div', { style: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '24px' } },
-              React.createElement('div', null,
-                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Data:'),
-                React.createElement('input', {
-                  type: 'date',
-                  value: selectedDate,
-                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value),
-                  min: '2025-08-06',
-                  max: '2025-09-05',
-                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-                })
-              ),
-              
-              React.createElement('div', null,
-                React.createElement('label', { style: { display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '8px' } }, 'Timeframe:'),
-                React.createElement('select', {
-                  value: selectedTimeframe,
-                  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTimeframe(e.target.value),
-                  style: { backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '4px', padding: '8px 12px', color: 'white' }
-                },
-                  React.createElement('option', { value: '1m' }, '1 minuto'),
-                  React.createElement('option', { value: '5m' }, '5 minutos'),
-                  React.createElement('option', { value: '15m' }, '15 minutos')
-                )
-              ),
-              
-              React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Análise de 10 estratégias probabilísticas')
-            )
-          )
-      ),
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {isCollecting ? '⏹️ Parar' : '▶️ Iniciar'}
+        </button>
+      </div>
 
-      // Renderizar conteúdo baseado na aba ativa
-      activeTab === 'analysis' ? 
-        React.createElement(StrategyAnalysis, { selectedDate, selectedTimeframe }) :
-      activeTab === 'cycles' ? 
-        React.createElement(CyclesAnalysis, { selectedDate, selectedTimeframe }) :
-      activeTab === 'realtime_analysis' ? 
-        React.createElement(RealTimeStrategyAnalysis, { selectedDate, selectedTimeframe }) :
-      activeTab === 'historical_cross' ? 
-        React.createElement(HistoricalCrossAnalysis, { selectedDate, selectedTimeframe }) :
-      activeTab === 'predictive' ? 
-        React.createElement(PredictiveSystem, { selectedDate, selectedTimeframe }) :
-      activeTab === 'best_opportunities' ? 
-        React.createElement(BestOpportunitiesAnalysis, { selectedDate, selectedTimeframe }) :
-      activeTab === 'consecutive_wins' ? 
-        React.createElement(ConsecutiveWinsAnalysis, { selectedDate, selectedTimeframe }) :
-        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' } },
-        React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
-          React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' } }, stats.total),
-          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Total de Velas')
-        ),
-        
-        React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
-          React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#4ade80' } }, stats.green),
-          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, `Verdes (${stats.greenPercent}%)`)
-        ),
-        
-        React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
-          React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#ef4444' } }, stats.red),
-          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, `Vermelhas (${stats.redPercent}%)`)
-        ),
-        
-        React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '16px', borderRadius: '8px' } },
-          React.createElement('div', { style: { fontSize: '1.5rem', fontWeight: 'bold', color: '#facc15' } }, stats.greenPercent > stats.redPercent ? '🟢' : '🔴'),
-          React.createElement('div', { style: { fontSize: '0.875rem', color: '#9ca3af' } }, 'Tendência')
-        )
-      ),
+      {/* Navegação de Abas */}
+      <div style={{ 
+              display: 'flex',
+        justifyContent: 'center', 
+        marginBottom: '32px',
+        borderBottom: '1px solid #334155'
+      }}>
+        <button
+          onClick={() => setActiveTab('catalogador')}
+          style={{
+              padding: '12px 24px',
+              border: 'none',
+            backgroundColor: activeTab === 'catalogador' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'catalogador' ? 'white' : '#94a3b8',
+            fontWeight: 'bold',
+              cursor: 'pointer',
+            borderBottom: activeTab === 'catalogador' ? '3px solid #3b82f6' : '3px solid transparent',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          🕯️ Catalogador de Velas
+        </button>
+        <button
+          onClick={() => setActiveTab('estrategias')}
+          style={{
+              padding: '12px 24px',
+              border: 'none',
+            backgroundColor: activeTab === 'estrategias' ? '#3b82f6' : 'transparent',
+            color: activeTab === 'estrategias' ? 'white' : '#94a3b8',
+            fontWeight: 'bold',
+              cursor: 'pointer',
+            borderBottom: activeTab === 'estrategias' ? '3px solid #3b82f6' : '3px solid transparent',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          📊 Estratégias Probabilísticas
+        </button>
+      </div>
 
-      React.createElement('div', { style: { backgroundColor: '#1f2937', padding: '24px', borderRadius: '8px' } },
-        React.createElement('h2', { style: { fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '16px' } }, 
-          `Grid 24x${selectedTimeframe === '1m' ? '60' : selectedTimeframe === '5m' ? '12' : '4'} - ${selectedDate} (${selectedTimeframe})`
-        ),
-        
-        loading ? 
-          React.createElement('div', { style: { textAlign: 'center', padding: '32px 0' } },
-            React.createElement('div', { style: { animation: 'spin 1s linear infinite', borderRadius: '9999px', height: '48px', width: '48px', borderBottom: '2px solid #60a5fa', margin: '0 auto' } }),
-            React.createElement('p', { style: { marginTop: '16px', color: '#9ca3af' } }, 'Carregando dados...')
-          ) :
-        React.createElement('div', { style: { overflowX: 'auto' } },
-          React.createElement('div', { style: { display: 'inline-block' } },
-            React.createElement('div', { style: { display: 'flex', marginBottom: '8px' } },
-              React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center', fontWeight: 'bold' } }, 'Hora'),
-              ...Array.from({ length: getMinuteColumns(selectedTimeframe) }, (_, i) => 
-                React.createElement('div', { 
-                  key: i, 
-                  style: { 
-                    width: selectedTimeframe === '1m' ? '12px' : selectedTimeframe === '5m' ? '16px' : '20px', 
-                    height: '24px', 
-                    fontSize: '0.6rem', 
-                    color: '#9ca3af', 
-                    textAlign: 'center',
-                    margin: selectedTimeframe === '1m' ? '0 1px' : '0 1px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  } 
-                }, 
-                  // Mostrar minutos baseado no timeframe
-                  selectedTimeframe === '1m' ? i.toString().padStart(2, '0') :
-                  selectedTimeframe === '5m' ? (i * 5).toString().padStart(2, '0') :
-                  selectedTimeframe === '15m' ? (i * 15).toString().padStart(2, '0') : ''
-                )
-              )
-            ),
-            ...grid.map((hour, hourIndex) =>
-              React.createElement('div', { key: hourIndex, style: { display: 'flex', alignItems: 'center', marginBottom: '4px' } },
-                React.createElement('div', { style: { width: '64px', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'right', paddingRight: '8px', fontWeight: 'bold' } }, `${hourIndex.toString().padStart(2, '0')}:00`),
-                ...hour.map((candle, minuteIndex) => 
-                  React.createElement('div', {
-                    key: `${hourIndex}-${minuteIndex}`,
-                    style: {
-                      width: selectedTimeframe === '1m' ? '12px' : selectedTimeframe === '5m' ? '16px' : '20px',
-                      height: selectedTimeframe === '1m' ? '12px' : selectedTimeframe === '5m' ? '14px' : '16px',
-                      margin: selectedTimeframe === '1m' ? '0 1px' : '0 1px',
-                      borderRadius: '2px',
-                      backgroundColor: candle 
-                        ? candle.color === 'GREEN' 
-                          ? '#22c55e' 
-                          : '#ef4444'
-                        : '#4b5563'
-                    },
-                    title: candle 
-                      ? `${candle.time_key} - ${candle.color} - $${candle.close_price}`
-                      : `${hourIndex.toString().padStart(2, '0')}:${minuteIndex.toString().padStart(2, '0')} - Sem dados`
-                  })
-                )
-              )
-            )
-          )
-        ),
+      {/* Conteúdo das Abas */}
+      {activeTab === 'catalogador' && (
+        <CandleGrid 
+          candles={candles}
+          selectedDate={selectedDate}
+          selectedTimeframe={selectedTimeframe}
+        />
+      )}
 
-        React.createElement('div', { style: { marginTop: '24px', display: 'flex', gap: '24px', fontSize: '0.875rem' } },
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            React.createElement('div', { style: { width: '16px', height: '16px', backgroundColor: '#22c55e', borderRadius: '4px' } }),
-            React.createElement('span', null, 'Vela Verde (Fechamento ≥ Abertura)')
-          ),
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            React.createElement('div', { style: { width: '16px', height: '16px', backgroundColor: '#ef4444', borderRadius: '4px' } }),
-            React.createElement('span', null, 'Vela Vermelha (Fechamento < Abertura)')
-          ),
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            React.createElement('div', { style: { width: '16px', height: '16px', backgroundColor: '#4b5563', borderRadius: '4px' } }),
-            React.createElement('span', null, 'Sem dados')
-          )
-        ),
-
-        React.createElement('div', { style: { marginTop: '32px', backgroundColor: '#1f2937', padding: '24px', borderRadius: '8px' } },
-          React.createElement('h3', { style: { fontSize: '1.125rem', fontWeight: 'semibold', marginBottom: '16px' } }, '📊 Informações dos Dados'),
-          React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', fontSize: '0.875rem' } },
-            React.createElement('div', null,
-              React.createElement('span', { style: { color: '#9ca3af' } }, 'Par:'),
-              React.createElement('span', { style: { marginLeft: '8px', color: 'white', fontWeight: 'bold' } }, 'SOLUSDT')
-            ),
-            React.createElement('div', null,
-              React.createElement('span', { style: { color: '#9ca3af' } }, 'Período:'),
-              React.createElement('span', { style: { marginLeft: '8px', color: 'white' } }, '06/08/2025 a 05/09/2025')
-            ),
-            React.createElement('div', null,
-              React.createElement('span', { style: { color: '#9ca3af' } }, 'Total de candles:'),
-              React.createElement('span', { style: { marginLeft: '8px', color: 'white', fontWeight: 'bold' } }, '54,720')
-            ),
-            React.createElement('div', null,
-              React.createElement('span', { style: { color: '#9ca3af' } }, '1m:'),
-              React.createElement('span', { style: { marginLeft: '8px', color: 'white' } }, '43,200 candles')
-            ),
-            React.createElement('div', null,
-              React.createElement('span', { style: { color: '#9ca3af' } }, '5m:'),
-              React.createElement('span', { style: { marginLeft: '8px', color: 'white' } }, '8,640 candles')
-            ),
-            React.createElement('div', null,
-              React.createElement('span', { style: { color: '#9ca3af' } }, '15m:'),
-              React.createElement('span', { style: { marginLeft: '8px', color: 'white' } }, '2,880 candles')
-            )
-          )
-        )
-      )
-    )
+      {activeTab === 'estrategias' && (
+        <StrategyAnalysis 
+          selectedDate={selectedDate}
+          selectedTimeframe={selectedTimeframe}
+        />
+      )}
+    </div>
   )
 }
