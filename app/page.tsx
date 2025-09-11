@@ -35,7 +35,7 @@ export default function Home() {
   // Carregar dados existentes
   const loadExistingData = async () => {
     try {
-      const data = await collectorRef.current?.getCandlesFromSupabase('SOLUSDT', selectedTimeframe)
+      const data = await collectorRef.current?.getCandlesFromSupabase(selectedDate, selectedTimeframe, 'SOLUSDT')
       if (data) {
         setCandles(data)
       }
