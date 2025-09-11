@@ -82,10 +82,10 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
         // Buscar dados de acertividade
         const { data: strategyData } = await supabase
           .from('accuracy_cycles')
-          .select('*')
+        .select('*')
           .eq('strategy_name', strategy.name)
           .eq('pair', 'SOLUSDT')
-          .eq('timeframe', selectedTimeframe)
+        .eq('timeframe', selectedTimeframe)
           .order('created_at', { ascending: false })
           .limit(10)
 
@@ -119,8 +119,7 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
   const loadData = async () => {
     try {
       setLoading(true)
-      const collector = new realtimeCollector()
-      const data = await collector.getCandlesFromSupabase('SOLUSDT', selectedTimeframe)
+      const data = await realtimeCollector.getCandlesFromSupabase(selectedDate, selectedTimeframe, 'SOLUSDT')
 
       if (data) {
         setCandles(data)
@@ -155,9 +154,9 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
           Análise em tempo real das estratégias com estatísticas de acertividade
         </p>
         <div style={{ 
-          display: 'flex', 
+                display: 'flex', 
           gap: '16px', 
-          alignItems: 'center',
+                alignItems: 'center', 
           flexWrap: 'wrap'
         }}>
           <div style={{ 
@@ -212,9 +211,9 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
             <div
               key={index}
               style={{
-                backgroundColor: '#1f2937',
-                padding: '20px',
-                borderRadius: '12px',
+              backgroundColor: '#1f2937',
+              padding: '20px',
+              borderRadius: '12px',
                 border: `1px solid ${result.signal === 'CALL' ? '#22c55e' : '#ef4444'}`,
                 borderLeft: `4px solid ${result.signal === 'CALL' ? '#22c55e' : '#ef4444'}`,
                 transition: 'all 0.3s ease'
@@ -234,10 +233,10 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
                   {result.strategy_name}
                 </h3>
                 <div style={{
-                  padding: '4px 12px',
+                  padding: '4px 12px', 
                   backgroundColor: result.signal === 'CALL' ? '#22c55e' : '#ef4444',
-                  borderRadius: '20px',
-                  fontSize: '0.875rem',
+                  borderRadius: '20px', 
+              fontSize: '0.875rem',
                   fontWeight: 'bold',
                   color: 'white'
                 }}>
@@ -270,9 +269,9 @@ export default function StrategyAnalysis({ selectedDate, selectedTimeframe }: St
               </div>
 
               <div style={{
-                padding: '8px 12px',
+              padding: '8px 12px', 
                 backgroundColor: '#374151',
-                borderRadius: '6px',
+              borderRadius: '6px', 
                 fontSize: '0.875rem',
                 color: '#e5e7eb'
               }}>
