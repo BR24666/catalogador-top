@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { realtimeCollector } from '../lib/realtime-collector'
+import { RealtimeCollector } from '../lib/realtime-collector'
 import { CandleData } from '../lib/binance-api'
 import CandleGrid from '../components/CandleGrid'
 import StrategyAnalysis from '../components/StrategyAnalysis'
@@ -12,11 +12,11 @@ export default function Home() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1m')
   const [activeTab, setActiveTab] = useState<'catalogador' | 'estrategias'>('catalogador')
   const [isCollecting, setIsCollecting] = useState(false)
-  const collectorRef = useRef<realtimeCollector | null>(null)
+  const collectorRef = useRef<RealtimeCollector | null>(null)
 
   // Inicializar coletor
   useEffect(() => {
-    collectorRef.current = new realtimeCollector((newCandles) => {
+    collectorRef.current = new RealtimeCollector((newCandles) => {
         setCandles(newCandles)
     })
   }, [])
