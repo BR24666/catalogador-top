@@ -111,7 +111,7 @@ export class RealtimeCollector {
   }
 
   // Buscar candles do Supabase (tabela de tempo real)
-  private async getCandlesFromSupabase(date: string, timeframe: string, pair: string): Promise<CandleData[]> {
+  public async getCandlesFromSupabase(date: string, timeframe: string, pair: string): Promise<CandleData[]> {
     try {
       console.log(`🔍 Buscando dados do Supabase (realtime): ${pair} ${timeframe} ${date}`)
       
