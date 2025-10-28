@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { CandleData } from '../lib/btc-collector'
 

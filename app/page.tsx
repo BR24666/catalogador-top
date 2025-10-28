@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect, useRef } from 'react'
 import { BTCCollector, CandleData } from '../lib/btc-collector'
 import CandleChart from '../components/CandleChart'
@@ -13,14 +15,14 @@ export default function Home() {
   // Inicializar coletor
   useEffect(() => {
     collectorRef.current = new BTCCollector((newCandles) => {
-      setCandles(newCandles)
+        setCandles(newCandles)
       setTotalCandles(newCandles.length)
-      setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
+        setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
     })
 
     // Carregar dados existentes
     loadExistingData()
-
+    
     return () => {
       if (collectorRef.current) {
         collectorRef.current.stopCollection()
@@ -90,9 +92,9 @@ export default function Home() {
         gap: '16px'
       }}>
         <div style={{
-          display: 'flex',
+              display: 'flex',
           gap: '24px',
-          alignItems: 'center',
+              alignItems: 'center',
           flexWrap: 'wrap'
         }}>
           <button
@@ -139,9 +141,9 @@ export default function Home() {
           </button>
 
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
           }}>
             <div style={{
               width: '12px',
