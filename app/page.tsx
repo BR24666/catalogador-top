@@ -1,196 +1,217 @@
-'use client'
-
 import React, { useState, useEffect, useRef } from 'react'
-import { RealtimeCollector } from '../lib/realtime-collector'
-import { CandleData } from '../lib/binance-api'
-import CandleGrid from '../components/CandleGrid'
-import StrategyAnalysis from '../components/StrategyAnalysis'
+import { BTCCollector, CandleData } from '../lib/btc-collector'
+import CandleChart from '../components/CandleChart'
+import PerformancePanel from '../components/PerformancePanel'
 
 export default function Home() {
   const [candles, setCandles] = useState<CandleData[]>([])
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [selectedTimeframe, setSelectedTimeframe] = useState('1m')
-  const [activeTab, setActiveTab] = useState<'catalogador' | 'estrategias'>('catalogador')
   const [isCollecting, setIsCollecting] = useState(false)
-  const collectorRef = useRef<RealtimeCollector | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<string>('')
+  const [totalCandles, setTotalCandles] = useState(0)
+  const collectorRef = useRef<BTCCollector | null>(null)
 
   // Inicializar coletor
   useEffect(() => {
-    collectorRef.current = new RealtimeCollector((newCandles) => {
-        setCandles(newCandles)
+    collectorRef.current = new BTCCollector((newCandles) => {
+      setCandles(newCandles)
+      setTotalCandles(newCandles.length)
+      setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
     })
+
+    // Carregar dados existentes
+    loadExistingData()
+
+    return () => {
+      if (collectorRef.current) {
+        collectorRef.current.stopCollection()
+      }
+    }
   }, [])
 
-  // Iniciar/parar coleta
-  const toggleCollection = () => {
+  const loadExistingData = async () => {
+    if (collectorRef.current) {
+      const existingCandles = await collectorRef.current.getCandlesFromDB(100)
+      setCandles(existingCandles)
+      setTotalCandles(existingCandles.length)
+    }
+  }
+
+  const toggleCollection = async () => {
+    if (!collectorRef.current) return
+
     if (isCollecting) {
-      collectorRef.current?.stopCollection('SOLUSDT', selectedTimeframe)
+      collectorRef.current.stopCollection()
       setIsCollecting(false)
     } else {
-      collectorRef.current?.startCollection('SOLUSDT', selectedTimeframe)
+      await collectorRef.current.startCollection()
       setIsCollecting(true)
     }
   }
 
-  // Carregar dados existentes
-  const loadExistingData = async () => {
-    try {
-      const data = await collectorRef.current?.getCandlesFromSupabase(selectedDate, selectedTimeframe, 'SOLUSDT')
-      if (data) {
-        setCandles(data)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error)
-    }
-  }
-
-  useEffect(() => {
-    loadExistingData()
-  }, [selectedTimeframe])
-
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#0f172a', 
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#0f172a',
       color: 'white',
       padding: '20px'
     }}>
       {/* Cabeçalho */}
-      <div style={{ 
-        textAlign: 'center', 
+      <div style={{
+        textAlign: 'center',
         marginBottom: '32px',
         borderBottom: '1px solid #334155',
         paddingBottom: '20px'
       }}>
-        <h1 style={{ 
-          fontSize: '2.5rem', 
-          fontWeight: 'bold', 
+        <h1 style={{
+          fontSize: '2.5rem',
+          fontWeight: 'bold',
           marginBottom: '16px',
-          background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+          background: 'linear-gradient(45deg, #f59e0b, #eab308)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
-          📊 Catalogador Probabilístico
+          ₿ Catalogador BTC/USDT
         </h1>
         <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
-          Análise de velas e estratégias em tempo real
+          Monitoramento contínuo de candles e análise de estratégias probabilísticas
         </p>
       </div>
 
-      {/* Controles */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        gap: '16px', 
-        marginBottom: '32px',
-        flexWrap: 'wrap'
+      {/* Painel de Controle */}
+      <div style={{
+        backgroundColor: '#1e293b',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <label style={{ color: '#e2e8f0' }}>Data:</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+        <div style={{
+          display: 'flex',
+          gap: '24px',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <button
+            onClick={toggleCollection}
             style={{
-              padding: '8px 12px',
+              padding: '12px 24px',
               borderRadius: '8px',
-              border: '1px solid #475569',
-              backgroundColor: '#1e293b',
-              color: 'white'
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <label style={{ color: '#e2e8f0' }}>Timeframe:</label>
-          <select
-            value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #475569',
-              backgroundColor: '#1e293b',
-              color: 'white'
+              border: 'none',
+              backgroundColor: isCollecting ? '#ef4444' : '#22c55e',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            <option value="1m">1 minuto</option>
-            <option value="5m">5 minutos</option>
-            <option value="15m">15 minutos</option>
-          </select>
+            {isCollecting ? (
+              <>
+                <span style={{
+                  display: 'inline-block',
+                  width: '8px',
+                  height: '8px',
+                  backgroundColor: 'white',
+                  borderRadius: '2px'
+                }}></span>
+                Parar Coleta
+              </>
+            ) : (
+              <>
+                <span style={{
+                  display: 'inline-block',
+                  width: '0',
+                  height: '0',
+                  borderLeft: '8px solid white',
+                  borderTop: '5px solid transparent',
+                  borderBottom: '5px solid transparent'
+                }}></span>
+                Iniciar Coleta
+              </>
+            )}
+          </button>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              backgroundColor: isCollecting ? '#22c55e' : '#64748b'
+            }}>
+              {isCollecting && (
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  backgroundColor: '#22c55e',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}></div>
+              )}
+            </div>
+            <span style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
+              {isCollecting ? 'Coletando em tempo real' : 'Coleta pausada'}
+            </span>
+          </div>
         </div>
 
-        <button
-          onClick={toggleCollection}
-          style={{
-            padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-            backgroundColor: isCollecting ? '#ef4444' : '#22c55e',
-              color: 'white',
-            fontWeight: 'bold',
-              cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          {isCollecting ? '⏹️ Parar' : '▶️ Iniciar'}
-        </button>
+        <div style={{
+          display: 'flex',
+          gap: '24px',
+          alignItems: 'center'
+        }}>
+          <div style={{
+            textAlign: 'right'
+          }}>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>
+              Total de Candles
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f59e0b' }}>
+              {totalCandles}
+            </div>
+          </div>
+
+          {lastUpdate && (
+            <div style={{
+              textAlign: 'right'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>
+                Última Atualização
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#3b82f6' }}>
+                {lastUpdate}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Navegação de Abas */}
-      <div style={{ 
-              display: 'flex',
-        justifyContent: 'center', 
-        marginBottom: '32px',
-        borderBottom: '1px solid #334155'
-      }}>
-        <button
-          onClick={() => setActiveTab('catalogador')}
-          style={{
-              padding: '12px 24px',
-              border: 'none',
-            backgroundColor: activeTab === 'catalogador' ? '#3b82f6' : 'transparent',
-            color: activeTab === 'catalogador' ? 'white' : '#94a3b8',
-            fontWeight: 'bold',
-              cursor: 'pointer',
-            borderBottom: activeTab === 'catalogador' ? '3px solid #3b82f6' : '3px solid transparent',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          🕯️ Catalogador de Velas
-        </button>
-        <button
-          onClick={() => setActiveTab('estrategias')}
-          style={{
-              padding: '12px 24px',
-              border: 'none',
-            backgroundColor: activeTab === 'estrategias' ? '#3b82f6' : 'transparent',
-            color: activeTab === 'estrategias' ? 'white' : '#94a3b8',
-            fontWeight: 'bold',
-              cursor: 'pointer',
-            borderBottom: activeTab === 'estrategias' ? '3px solid #3b82f6' : '3px solid transparent',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          📊 Estratégias Probabilísticas
-        </button>
-      </div>
+      {/* Gráfico de Candles */}
+      <CandleChart candles={candles} />
 
-      {/* Conteúdo das Abas */}
-      {activeTab === 'catalogador' && (
-        <CandleGrid 
-          candles={candles}
-          selectedDate={selectedDate}
-          selectedTimeframe={selectedTimeframe}
-        />
-      )}
+      {/* Painel de Performance */}
+      <PerformancePanel />
 
-      {activeTab === 'estrategias' && (
-        <StrategyAnalysis 
-          selectedDate={selectedDate}
-          selectedTimeframe={selectedTimeframe}
-        />
-      )}
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </div>
   )
 }
