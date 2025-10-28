@@ -14,15 +14,18 @@ export default function Home() {
 
   // Inicializar coletor
   useEffect(() => {
-    collectorRef.current = new BTCCollector((newCandles) => {
+    // Evitar criar múltiplas instâncias
+    if (!collectorRef.current) {
+      collectorRef.current = new BTCCollector((newCandles) => {
         setCandles(newCandles)
-      setTotalCandles(newCandles.length)
+        setTotalCandles(newCandles.length)
         setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
-    })
+      })
 
-    // Carregar dados existentes
-    loadExistingData()
-    
+      // Carregar dados existentes
+      loadExistingData()
+    }
+
     return () => {
       if (collectorRef.current) {
         collectorRef.current.stopCollection()

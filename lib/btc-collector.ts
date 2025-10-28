@@ -98,10 +98,12 @@ export class BTCCollector {
   /**
    * Salvar candles no Supabase
    */
-  async saveCandles(candles: CandleData[]): Promise<void> {
+  async saveCandles(candles: CandleData[], silent: boolean = false): Promise<void> {
     try {
+      if (!silent) console.log(`💾 Salvando ${candles.length} candles...`)
+      
       for (const candle of candles) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('candles')
           .upsert({
             timestamp: candle.timestamp,
@@ -114,13 +116,14 @@ export class BTCCollector {
           }, {
             onConflict: 'timestamp'
           })
+          .select()
 
         if (error) {
-          console.error('❌ Erro ao salvar candle:', error)
+          console.error('❌ Erro ao salvar candle:', error.message, error.details)
         }
       }
       
-      console.log(`💾 ${candles.length} candles salvos no banco`)
+      if (!silent) console.log(`✅ ${candles.length} candles salvos`)
     } catch (error) {
       console.error('❌ Erro ao salvar candles:', error)
     }
@@ -161,13 +164,22 @@ export class BTCCollector {
     console.log('🚀 Iniciando coleta de candles BTC/USDT...')
     this.isCollecting = true
 
-    // Carregar histórico inicial
+    // Carregar histórico inicial (salvando em lotes menores)
+    console.log('📦 Carregando histórico inicial...')
     const historical = await this.fetchHistoricalCandles(500)
     if (historical.length > 0) {
-      await this.saveCandles(historical)
+      console.log(`💾 Salvando ${historical.length} candles em lotes de 50...`)
+      // Salvar em lotes de 50 para evitar timeout
+      for (let i = 0; i < historical.length; i += 50) {
+        const batch = historical.slice(i, i + 50)
+        await this.saveCandles(batch, true) // silent mode
+        console.log(`✅ Lote ${Math.floor(i/50) + 1}/${Math.ceil(historical.length/50)} salvo`)
+      }
+      console.log('✅ Todos os candles históricos foram salvos!')
     }
 
     // Atualizar candle atual a cada 5 segundos
+    console.log('⏰ Iniciando atualização automática a cada 5 segundos...')
     this.intervalId = setInterval(async () => {
       await this.updateCurrentCandle()
     }, 5000)
@@ -183,15 +195,20 @@ export class BTCCollector {
     try {
       const newCandle = await this.fetchCurrentCandle()
       
-      if (!newCandle) return
+      if (!newCandle) {
+        console.log('⚠️ Nenhum candle retornado da Binance')
+        return
+      }
+
+      const time = new Date(newCandle.timestamp).toLocaleTimeString('pt-BR')
+      console.log(`📊 ${time} | O:${newCandle.open.toFixed(2)} H:${newCandle.high.toFixed(2)} L:${newCandle.low.toFixed(2)} C:${newCandle.close.toFixed(2)} | ${newCandle.status}`)
 
       // Se mudou o timestamp, a vela anterior fechou
       if (this.currentCandle && this.currentCandle.timestamp !== newCandle.timestamp) {
         // Marcar vela anterior como finalizada
         this.currentCandle.status = 'finalizada'
-        await this.saveCandles([this.currentCandle])
-        
-        console.log('✅ Vela fechada:', this.currentCandle.timestamp)
+        console.log('🔒 Vela fechada! Nova vela iniciada.')
+        await this.saveCandles([this.currentCandle], true)
         
         // Atualizar métricas das estratégias
         await this.updateStrategiesMetrics()
@@ -200,8 +217,8 @@ export class BTCCollector {
       // Atualizar vela atual
       this.currentCandle = newCandle
       
-      // Salvar vela em formação
-      await this.saveCandles([newCandle])
+      // Salvar vela em formação (silent)
+      await this.saveCandles([newCandle], true)
 
       // Notificar atualização
       if (this.onUpdateCallback) {
