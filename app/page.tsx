@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { BTCCollector, CandleData } from '../lib/btc-collector'
 import CandleChart from '../components/CandleChart'
 import PerformancePanel from '../components/PerformancePanel'
+import MLMetrics from '../components/MLMetrics'
 
 export default function Home() {
   const [candles, setCandles] = useState<CandleData[]>([])
@@ -25,7 +26,7 @@ export default function Home() {
       // Carregar dados existentes
       loadExistingData()
     }
-
+    
     return () => {
       if (collectorRef.current) {
         collectorRef.current.stopCollection()
@@ -203,6 +204,9 @@ export default function Home() {
 
       {/* Gráfico de Candles */}
       <CandleChart candles={candles} />
+
+      {/* Métricas do Modelo ML */}
+      <MLMetrics />
 
       {/* Painel de Performance */}
       <PerformancePanel />
