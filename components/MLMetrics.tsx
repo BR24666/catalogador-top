@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || ''
 
 interface MLStatus {
   ok: boolean
@@ -34,6 +34,13 @@ export default function MLMetrics() {
 
   const loadStatus = async () => {
     try {
+      // Se não houver URL do backend configurada, não tenta carregar
+      if (!BACKEND_URL) {
+        console.log('ℹ️ Backend ML não configurado (use localmente)')
+        setLoading(false)
+        return
+      }
+
       const response = await axios.get(`${BACKEND_URL}/api/model/status`)
       setStatus(response.data)
       setLoading(false)
@@ -57,6 +64,23 @@ export default function MLMetrics() {
     )
   }
 
+  if (!status && !BACKEND_URL) {
+    return (
+      <div style={{
+        backgroundColor: '#1e293b',
+        borderRadius: '12px',
+        padding: '40px',
+        textAlign: 'center',
+        color: '#fbbf24'
+      }}>
+        ℹ️ Sistema ML disponível apenas localmente
+        <div style={{ fontSize: '0.875rem', marginTop: '8px', color: '#94a3b8' }}>
+          Para usar, configure NEXT_PUBLIC_BACKEND_URL e inicie o backend localmente
+        </div>
+      </div>
+    )
+  }
+
   if (!status) {
     return (
       <div style={{
@@ -68,7 +92,7 @@ export default function MLMetrics() {
       }}>
         ❌ Erro ao carregar métricas ML
         <div style={{ fontSize: '0.875rem', marginTop: '8px', color: '#94a3b8' }}>
-          Certifique-se de que o backend está rodando
+          Certifique-se de que o backend está rodando em {BACKEND_URL}
         </div>
       </div>
     )
